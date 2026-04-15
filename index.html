@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0c0c0e">
+<meta name="theme-color" content="#ffffff" id="theme-color-meta">
 <title>URIA</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -21,36 +21,50 @@
 /* ============ RESET & BASE ============ */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
+  /* ── 기본: 화이트 테마 ── */
+  --bg:#ffffff;--s1:#f5f5f7;--s2:#efefef;--s3:#e5e5ea;
+  --line:#e0e0e5;--line2:#d0d0d5;
+  --t1:#0c0c0e;--t2:#505055;--t3:#8a8a90;
+  --acc:#a020f0;--acc2:#8010d0;
+  --gr:#059669;--rd:#e53e3e;--yl:#d97706;--bl:#2563eb;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+  --btn-bg:#a020f0;--btn-txt:#fff;
+  --nav-bg:rgba(255,255,255,.96);
+}
+/* ── Tonight Mode ON: 블랙 + 핑크 테마 ── */
+.tonight-on{
   --bg:#0c0c0e;--s1:#141416;--s2:#1c1c1f;--s3:#242428;
   --line:#2a2a2e;--line2:#363639;
   --t1:#f0f0f2;--t2:#8a8a90;--t3:#505055;
-  --acc:#a78bfa;--acc2:#7c3aed;
+  --acc:#ff6eb4;--acc2:#e0508a;
   --gr:#34d399;--rd:#f87171;--yl:#fbbf24;--bl:#60a5fa;
-  --safe-b:env(safe-area-inset-bottom,0px);
-  --safe-t:env(safe-area-inset-top,0px);
+  --btn-bg:#ff6eb4;--btn-txt:#fff;
+  --nav-bg:rgba(12,12,14,.96);
 }
-html,body{height:100%;background:var(--bg);overflow:hidden;font-family:'Inter',sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased}
+
+html,body{height:100%;background:var(--bg);overflow:hidden;font-family:'Inter',sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
 input,button,select,textarea{font-family:'Inter',sans-serif}
 button{cursor:pointer;border:none;background:none;color:inherit}
 
 /* ============ APP SHELL ============ */
-#app{height:100vh;height:100dvh;max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg)}
+#app{height:100vh;height:100dvh;max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg);transition:background .35s}
 
 /* ============ SCREENS ============ */
-.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;background:var(--bg);padding-bottom:calc(70px + var(--safe-b))}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;background:var(--bg);padding-bottom:calc(70px + var(--safe-b));transition:background .35s}
 .screen.active{display:block;animation:fadeUp .2s ease}
 .no-nav{padding-bottom:0!important}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* ============ TOP BAR ============ */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-t) + 14px) 20px 14px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-t) + 14px) 20px 14px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;transition:background .35s,border-color .35s}
 .tb-logo{font-size:16px;font-weight:600;letter-spacing:.06em;color:var(--t1)}
 .tb-sub{font-size:12px;color:var(--t3)}
 .tb-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--t2)}
 .tb-back svg{width:18px;height:18px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round}
 
 /* ============ BOTTOM NAV ============ */
-#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(12,12,14,.96);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:none;z-index:50;padding:8px 0 calc(8px + var(--safe-b))}
+#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--nav-bg);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:none;z-index:50;padding:8px 0 calc(8px + var(--safe-b));transition:background .3s}
 .nav-inner{display:flex}
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;cursor:pointer;transition:opacity .15s}
 .ni svg{width:20px;height:20px;stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
@@ -85,7 +99,7 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 /* ============ BUTTONS ============ */
 .btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:500;transition:opacity .15s;letter-spacing:.01em}
 .btn:active{opacity:.8}
-.btn-p{background:var(--acc);color:#fff}
+.btn-p{background:var(--btn-bg);color:var(--btn-txt)}
 .btn-p2{background:var(--acc2);color:#fff}
 .btn-s{background:var(--s2);color:var(--t2);border:1px solid var(--line2)}
 .btn-r{background:var(--rd);color:#fff}
@@ -109,12 +123,15 @@ select.form-input{background-image:none}
 .toggle-name{font-size:14px;font-weight:500;color:var(--t1)}
 .toggle-sub{font-size:11px;color:var(--t3);margin-top:2px}
 .sw{width:40px;height:22px;border-radius:11px;background:var(--s3);position:relative;transition:background .2s;flex-shrink:0}
-.sw.on{background:var(--acc2)}
+.sw.on{background:var(--btn-bg)}
 .sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .sw.on::after{left:21px}
 
 /* ============ SPLASH ============ */
-#screen-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;background:var(--bg)}
+#screen-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;background:#0c0c0e!important}
+#screen-splash *{color:#f0f0f2!important}
+#screen-splash .btn-p{background:#a020f0!important;color:#fff!important}
+#screen-splash .btn-s{background:#1c1c1f!important;color:#8a8a90!important;border:1px solid #363639!important}
 .splash-logo{font-size:48px;font-weight:700;letter-spacing:.08em;color:var(--t1);margin-bottom:8px}
 .splash-sub{font-size:13px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:60px}
 .splash-tagline{font-size:16px;color:var(--t2);text-align:center;line-height:1.6;margin-bottom:50px;max-width:280px}
@@ -323,9 +340,7 @@ select.form-input{background-image:none}
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:40px 30px">
     <div style="font-size:52px;font-weight:700;letter-spacing:.1em;margin-bottom:8px">URIA</div>
     <div style="font-size:11px;color:var(--t3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:60px">YOU REALLY INTO AVAILABLE?</div>
-    <div style="font-size:15px;color:var(--t2);text-align:center;line-height:1.7;margin-bottom:60px;max-width:270px">
-      오늘 가능한 사람을 찾고<br>손해 없이 시도하고<br>신뢰가 쌓이는 만남
-    </div>
+    <div style="margin-bottom:60px"></div>
     <button class="btn btn-p" style="max-width:280px" onclick="goScreen('screen-phone')">시작하기</button>
     <div style="height:20px"></div>
     <button class="btn btn-s" style="max-width:280px" onclick="devBypass()">개발자 모드 (테스트)</button>
@@ -803,9 +818,8 @@ function initFirebase() {
     auth = firebase.auth();
     rtdb = firebase.database();
     firebaseReady = true;
-    console.log('✅ Firebase 연결됨');
   } catch(e) {
-    console.warn('⚠️ Firebase 연결 실패 — 데모 모드로 실행:', e.message);
+    // 데모 모드로 실행
   }
 }
 
@@ -1145,9 +1159,17 @@ function toggleTonight() {
   const sw = document.getElementById('tonight-sw');
   const toggle = document.getElementById('tonight-toggle');
   const sub = document.getElementById('tonight-sub');
+  const app = document.getElementById('app');
   sw.classList.toggle('on', state.tonight);
   toggle.classList.toggle('on', state.tonight);
   sub.textContent = state.tonight ? '지금 가능한 사람들과 연결 중' : '오늘 가능한 사람들과 연결';
+
+  // 테마 전환: Tonight ON → 블랙+핑크 / OFF → 화이트+퍼플
+  app.classList.toggle('tonight-on', state.tonight);
+  document.body.classList.toggle('tonight-on', state.tonight);
+  document.querySelector('meta[id="theme-color-meta"]')
+    ?.setAttribute('content', state.tonight ? '#0c0c0e' : '#ffffff');
+
   updatePresence();
   if (state.tonight) {
     showToast('Tonight Mode ON — 매칭 시작!');
@@ -1896,7 +1918,7 @@ function loadDemoData() {
     deferredPrompt = e;
   });
 
-  console.log('🚀 URIA v1.0 initialized');
+  console.log('🚀 URIA');
 })();
 </script>
 </body>
