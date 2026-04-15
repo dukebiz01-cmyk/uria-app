@@ -1,3 +1,10 @@
+// Storage 안전 래퍼 (config.js용)
+const _cfgMem = {};
+const _LS = {
+  get(k)   { try { return window._LS.get(k); }    catch { return _cfgMem[k]??null; } },
+  set(k,v) { try { window._LS.set(k,v); }          catch { _cfgMem[k]=v; } },
+  del(k)   { try { window._LS.del(k); }         catch { delete _cfgMem[k]; } },
+};
 /**
  * URIA config.js v2
  * MODE: 'demo' → localStorage mock
@@ -32,7 +39,7 @@
  */
 
 const URIA_CONFIG = {
-  MODE: 'live',  // 'demo' | 'live'
+  MODE: 'demo',  // 'demo' | 'live'
 
   // Render 배포 후 이 URL로 변경
   API_BASE: 'https://uria-api.onrender.com/api',
@@ -51,9 +58,9 @@ const URIA_CONFIG = {
 // ── API 클라이언트 ─────────────────────────────────────
 const API = {
   _token: null,
-  setToken(t)  { this._token = t; localStorage.setItem('uria_token', t); },
-  getToken()   { return this._token || localStorage.getItem('uria_token'); },
-  clearToken() { this._token = null; localStorage.removeItem('uria_token'); },
+  setToken(t)  { this._token = t; _LS.set('uria_token',t); },
+  getToken()   { return this._token || _LS.get('uria_token'); },
+  clearToken() { this._token = null; _LS.del('uria_token'); },
 
   async _fetch(method, path, body) {
     if (URIA_CONFIG.MODE === 'demo') {
@@ -134,15 +141,15 @@ const DEMO_API = {
       birth_year: b.birth_year || 1995,
       coin_balance: 30,
     };
-    localStorage.setItem('uria_user', JSON.stringify(user));
-    localStorage.setItem('uria_token', 'demo_token');
+    _LS.set('uria_user',JSON.stringify(user));
+    _LS.set('uria_token','demo_token');
     return { access_token: 'demo_token', is_new_user: false, user };
   },
 
-  '/users/me': () => JSON.parse(localStorage.getItem('uria_user') || 'null'),
+  '/users/me': () => JSON.parse(_LS.get('uria_user') || 'null'),
 
   '/coins/balance': () => {
-    const u = JSON.parse(localStorage.getItem('uria_profile') || '{}');
+    const u = JSON.parse(_LS.get('uria_profile') || '{}');
     return { coin_balance: u.coins ?? 30, point_balance: u.points ?? 0 };
   },
 

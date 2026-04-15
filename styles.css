@@ -46,9 +46,9 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 /* ============ BOTTOM NAV ============ */
 #nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--nav-bg);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:none;z-index:50;padding:8px 0 calc(8px + var(--safe-b));transition:background .3s}
 .nav-inner{display:flex}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;cursor:pointer;transition:opacity .15s;min-width:0}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;cursor:pointer;transition:opacity .15s}
 .ni svg{width:20px;height:20px;stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
-.ni span{font-size:8px;color:var(--t3);transition:color .15s;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center}
+.ni span{font-size:9px;color:var(--t3);transition:color .15s;letter-spacing:.02em}
 .ni.on svg,.ni.on span{stroke:var(--acc);color:var(--acc)}
 .ni-badge{background:var(--rd);border-radius:20px;padding:1px 5px;font-size:9px;font-weight:600;color:#fff;position:absolute;top:-2px;right:50%;transform:translateX(8px)}
 
@@ -300,6 +300,9 @@ select.form-input{background-image:none}
 /* ============ TOAST ============ */
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--line2);border-radius:20px;padding:9px 18px;font-size:13px;color:var(--t1);z-index:998;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;max-width:80vw;text-align:center}
 .toast.show{opacity:1}
+
+/* ============ SPLASH CURSOR ============ */
+@keyframes cur-blink{0%,100%{opacity:1}50%{opacity:0}}
 
 /* ============ COIN PURCHASE MODAL ============ */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;display:none;align-items:flex-end}

@@ -1,35 +1,106 @@
-# URIA — 구조 분리 버전
+# URIA — You Really Into Available?
 
-## 파일 구조
+> 어른들의 솔직한 인스턴트 만남
+
+모노레포 구성: 웹앱(루트) + 백엔드(`/backend`)
+
+---
+
+## 📁 구조
+
 ```
-index.html        — HTML 셸
-styles.css        — 전체 CSS
-app.js            — 앱 로직 (XSS 방어, API 연결)
-config.js         — 설정 + API 클라이언트 (데모/라이브 분리)
-service-worker.js — PWA 앱셸 캐싱
-manifest.json     — PWA 설정 (상대경로 수정)
+uria-app/
+├── index.html, styles.css, app.js, config.js   ← 웹앱 (PWA)
+├── service-worker.js, manifest.json
+├── icon-192.png, icon-512.png
+├── render.yaml                                   ← Render Blueprint
+├── backend/
+│   ├── src/                                      ← 11개 모듈
+│   │   ├── modules/
+│   │   │   ├── auth, users, match, signals
+│   │   │   ├── chat (WebSocket), moments
+│   │   │   ├── coins, passport, reputation
+│   │   │   └── reports, admin
+│   │   ├── services/  (wallet, fcm, portone, passport.calculator, reputation.calculator)
+│   │   └── jobs/      (signalExpiry, momentExpiry)
+│   ├── db/migrations/  ← 14개 SQL
+│   └── package.json
+└── .github/workflows/
+    ├── deploy-pages.yml   ← 웹앱 → GitHub Pages
+    └── deploy-backend.yml ← 백엔드 → Render
 ```
 
-## 모드 전환
-config.js에서 `MODE: 'demo'` → `MODE: 'live'`로 변경 후
-`API_BASE`를 실제 Render URL로 수정
+---
 
-## SAFE BET 코인 흐름 (사양 기준)
-- Signal 전송: -3C 에스크로
-- 수락 시: 1C 확정 (추가 차감 없음)
-- Moment 완료: +1C 환불 → 순 비용 2C
-- 거절/만료: +3C 전액 환불
+## 🚀 배포
 
-## 보안
-- 브라우저에서 Firebase/Claude 비밀키 직접 사용 없음
-- AI 채팅은 백엔드 프록시 경유 (live 모드)
-- XSS: 모든 렌더링에 esc() 함수 적용
+### 1단계 — 웹앱 (GitHub Pages)
+```
+1. 이 폴더 전체를 dukebiz01-cmyk/uria-app에 push
+2. Settings → Pages → Source: GitHub Actions
+3. 5분 후 → https://dukebiz01-cmyk.github.io/uria-app
+```
 
-## Tonight Mode
-- 오후 6시~자정만 활성화 (live 모드)
-- demo 모드에서는 시간 제약 없음
+### 2단계 — 백엔드 (Render)
+```
+1. render.com → New → Blueprint
+2. uria-app 레포 선택 → render.yaml 자동 감지
+3. Apply → Singapore 리전, Postgres + Redis 자동 생성
+4. Shell에서: cd backend && node db/migrate.js
+5. /health 확인: https://uria-api.onrender.com/health
+```
 
-## GitHub Pages 배포
-1. 이 폴더 내용을 GitHub 레포에 업로드
-2. Settings → Pages → GitHub Actions
-3. push 시 자동 배포
+### 3단계 — 연결
+```
+config.js 수정:
+  MODE: 'demo' → 'live'
+  API_BASE: 'https://uria-api.onrender.com/api'
+git push → Pages 자동 재배포
+```
+
+---
+
+## 💰 SAFE BET 코인 흐름
+
+| 이벤트 | 코인 변동 |
+|--------|----------|
+| Signal 전송 | -3 (에스크로 hold) |
+| Signal 수락 | 0 (변동 없음) |
+| Moment 완료 | +1 환불 (순비용 2C) |
+| 거절/만료 | +3 전액 환불 |
+
+**여성 보상**: Signal 수락 +10pt · Moment 검증 +50pt
+
+---
+
+## 🎯 핵심 도메인
+
+| 개념 | 설명 |
+|------|------|
+| **Signal** | 매칭 신호 (3코인 에스크로, 12시간 만료) |
+| **Moment** | 실제 만남 (GPS 체크인 30분 윈도우) |
+| **Passport** | 여성 신뢰점수 (`37~45°C` 등 온도 표현) |
+| **Reputation** | 남성 평판점수 (모멘트/노쇼 기반) |
+| **Tonight Mode** | 18:00~24:00 활성화 |
+
+---
+
+## 🔐 외부 연동 (환경변수)
+
+- **KMC PASS** — 실명 OTP
+- **PortOne** — 결제
+- **Firebase FCM** — 푸시
+- **AWS S3** — 사진/셀카
+
+자세한 키 설정: `GITHUB_SECRETS.md` 참조
+
+---
+
+## ⚠️ Phase 2 TODO
+
+- [ ] PortOne 실결제 E2E
+- [ ] KMC PASS 실 OTP 연동
+- [ ] WebSocket 실시간 채팅
+- [ ] FCM 푸시 실기기 검증
+- [ ] 관리자 MOMENT 검토 UI
+- [ ] React Native 네이티브 빌드 환경
