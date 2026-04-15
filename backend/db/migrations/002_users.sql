@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   nickname VARCHAR(20) NOT NULL,
   bio VARCHAR(300),
   profile_photo_url TEXT,
+  selfie_photo_url TEXT,
   selfie_verified BOOLEAN NOT NULL DEFAULT FALSE,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','resting','suspended','banned')),
   tonight_on BOOLEAN NOT NULL DEFAULT FALSE,
