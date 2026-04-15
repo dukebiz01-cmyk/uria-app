@@ -17,11 +17,6 @@ services:
         fromDatabase:
           name: uria-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: uria-redis
-          type: redis
-          property: connectionString
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
