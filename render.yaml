@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: uria-api
+    env: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: uria-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: uria-redis
+          type: redis
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: ADMIN_SECRET
+        generateValue: true
+      - key: SIGNAL_ESCROW_COINS
+        value: 3
+      - key: SIGNAL_EXPIRY_HOURS
+        value: 12
+      - key: MOMENT_CHECKIN_WINDOW_MINUTES
+        value: 30
+      - key: MOMENT_GPS_ACCURACY_THRESHOLD
+        value: 100
+
+databases:
+  - name: uria-db
+    databaseName: uria
+    user: uria_user
+    region: singapore
+    plan: free
+
+services:
+  - type: redis
+    name: uria-redis
+    region: singapore
+    plan: free
+    maxmemoryPolicy: allkeys-lru
