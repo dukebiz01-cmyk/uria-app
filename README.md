@@ -1,92 +1,35 @@
-# URIA — 라이브 개발 가이드
+# URIA — 구조 분리 버전
 
-## 내 URL: https://[계정명].github.io/uria-app
-
----
-
-## 처음 한 번만: GitHub Pages 활성화 (3분)
-
-1. github.com 접속 → 새 레포지토리 생성
-   - 이름: `uria-app`
-   - Public 선택
-   - Create repository
-
-2. 이 폴더 파일 전체 업로드
-   - "uploading an existing file" 클릭
-   - 파일 전체 드래그앤드롭
-   - Commit changes
-
-3. Pages 활성화
-   - Settings → Pages
-   - Source: **GitHub Actions** 선택
-   - Save
-
-4. 2분 후 자동 배포 완료
-   - Actions 탭에서 진행 확인
-   - URL: `https://[계정명].github.io/uria-app`
-
----
-
-## 이후 수정 방법 (반복)
-
-### 방법 A: GitHub 웹에서 직접 수정 (코드 몰라도 됨)
-1. github.com/[계정]/uria-app
-2. `index.html` 클릭 → 연필 아이콘(Edit)
-3. 수정 → Commit changes
-4. 2분 후 URL 자동 업데이트
-
-### 방법 B: Claude에게 수정 요청
-Claude에게 "홈 화면에 ~~ 추가해줘" 요청
-→ 수정된 index.html 받기
-→ GitHub에서 파일 교체
-→ 2분 후 반영
-
----
-
-## 수정 → 배포 전체 흐름
-
+## 파일 구조
 ```
-Claude가 코드 수정
-       ↓
-index.html 다운로드
-       ↓
-GitHub에서 파일 교체
-       ↓
-GitHub Actions 자동 실행 (2분)
-       ↓
-https://[계정].github.io/uria-app 업데이트
-       ↓
-폰에서 확인
+index.html        — HTML 셸
+styles.css        — 전체 CSS
+app.js            — 앱 로직 (XSS 방어, API 연결)
+config.js         — 설정 + API 클라이언트 (데모/라이브 분리)
+service-worker.js — PWA 앱셸 캐싱
+manifest.json     — PWA 설정 (상대경로 수정)
 ```
 
----
+## 모드 전환
+config.js에서 `MODE: 'demo'` → `MODE: 'live'`로 변경 후
+`API_BASE`를 실제 Render URL로 수정
 
-## 모바일 앱처럼 설치하기 (PWA)
+## SAFE BET 코인 흐름 (사양 기준)
+- Signal 전송: -3C 에스크로
+- 수락 시: 1C 확정 (추가 차감 없음)
+- Moment 완료: +1C 환불 → 순 비용 2C
+- 거절/만료: +3C 전액 환불
 
-Chrome에서 URL 접속 →
-주소창 우측 메뉴(⋮) →
-"앱 설치" 또는 "홈 화면에 추가" →
-아이콘으로 실행 가능
+## 보안
+- 브라우저에서 Firebase/Claude 비밀키 직접 사용 없음
+- AI 채팅은 백엔드 프록시 경유 (live 모드)
+- XSS: 모든 렌더링에 esc() 함수 적용
 
----
+## Tonight Mode
+- 오후 6시~자정만 활성화 (live 모드)
+- demo 모드에서는 시간 제약 없음
 
-## 백엔드 연결 시 수정할 곳 (index.html)
-
-```javascript
-// [1] ⚙️ CONFIG 부분에서
-const FIREBASE_CONFIG = {
-  apiKey: "여기에 Firebase 키",
-  // ...
-};
-const CLAUDE_API_KEY = "여기에 Claude API 키";
-```
-
----
-
-## 개발 단계별 URL
-
-| 단계 | URL | 용도 |
-|------|-----|------|
-| 지금 | github.io/uria-app | UI 테스트 + 데모 |
-| 2주 후 | uria-api.onrender.com | 실제 백엔드 |
-| 출시 | uria.app (도메인 구입) | 프로덕션 |
+## GitHub Pages 배포
+1. 이 폴더 내용을 GitHub 레포에 업로드
+2. Settings → Pages → GitHub Actions
+3. push 시 자동 배포

@@ -8,329 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#ffffff" id="theme-color-meta">
 <title>URIA</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="./manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<!-- Firebase Compat SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-<style>
-/* ============ RESET & BASE ============ */
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{
-  /* ── 기본: 화이트 테마 ── */
-  --bg:#ffffff;--s1:#f5f5f7;--s2:#efefef;--s3:#e5e5ea;
-  --line:#e0e0e5;--line2:#d0d0d5;
-  --t1:#0c0c0e;--t2:#505055;--t3:#8a8a90;
-  --acc:#a020f0;--acc2:#8010d0;
-  --gr:#059669;--rd:#e53e3e;--yl:#d97706;--bl:#2563eb;
-  --safe-b:env(safe-area-inset-bottom,0px);
-  --safe-t:env(safe-area-inset-top,0px);
-  --btn-bg:#a020f0;--btn-txt:#fff;
-  --nav-bg:rgba(255,255,255,.96);
-}
-/* ── Tonight Mode ON: 블랙 + 핑크 테마 ── */
-.tonight-on{
-  --bg:#0c0c0e;--s1:#141416;--s2:#1c1c1f;--s3:#242428;
-  --line:#2a2a2e;--line2:#363639;
-  --t1:#f0f0f2;--t2:#8a8a90;--t3:#505055;
-  --acc:#ff6eb4;--acc2:#e0508a;
-  --gr:#34d399;--rd:#f87171;--yl:#fbbf24;--bl:#60a5fa;
-  --btn-bg:#ff6eb4;--btn-txt:#fff;
-  --nav-bg:rgba(12,12,14,.96);
-}
-
-html,body{height:100%;background:var(--bg);overflow:hidden;font-family:'Inter',sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
-input,button,select,textarea{font-family:'Inter',sans-serif}
-button{cursor:pointer;border:none;background:none;color:inherit}
-
-/* ============ APP SHELL ============ */
-#app{height:100vh;height:100dvh;max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg);transition:background .35s}
-
-/* ============ SCREENS ============ */
-.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;background:var(--bg);padding-bottom:calc(70px + var(--safe-b));transition:background .35s}
-.screen.active{display:block;animation:fadeUp .2s ease}
-.no-nav{padding-bottom:0!important}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-/* ============ TOP BAR ============ */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-t) + 14px) 20px 14px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;transition:background .35s,border-color .35s}
-.tb-logo{font-size:16px;font-weight:600;letter-spacing:.06em;color:var(--t1)}
-.tb-sub{font-size:12px;color:var(--t3)}
-.tb-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--t2)}
-.tb-back svg{width:18px;height:18px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round}
-
-/* ============ BOTTOM NAV ============ */
-#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--nav-bg);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:none;z-index:50;padding:8px 0 calc(8px + var(--safe-b));transition:background .3s}
-.nav-inner{display:flex}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;cursor:pointer;transition:opacity .15s}
-.ni svg{width:20px;height:20px;stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
-.ni span{font-size:9px;color:var(--t3);transition:color .15s;letter-spacing:.02em}
-.ni.on svg,.ni.on span{stroke:var(--acc);color:var(--acc)}
-.ni-badge{background:var(--rd);border-radius:20px;padding:1px 5px;font-size:9px;font-weight:600;color:#fff;position:absolute;top:-2px;right:50%;transform:translateX(8px)}
-
-/* ============ COMMON COMPONENTS ============ */
-.section-label{padding:16px 20px 8px;font-size:10px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;font-weight:500}
-.divider{height:1px;background:var(--line)}
-.row{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);cursor:pointer;gap:14px;transition:background .1s;position:relative}
-.row:active{background:var(--s1)}
-.row-ic{width:36px;height:36px;border-radius:10px;background:var(--s2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.row-ic svg{width:16px;height:16px;stroke:var(--t2);fill:none;stroke-width:1.5;stroke-linecap:round}
-.row-title{font-size:14px;font-weight:500;color:var(--t1)}
-.row-sub{font-size:11px;color:var(--t3);margin-top:2px}
-.row-right{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.chev{width:16px;height:16px;stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round}
-.stats-row{display:flex;border-bottom:1px solid var(--line)}
-.stat-item{flex:1;text-align:center;padding:16px 8px}
-.stat-item+.stat-item{border-left:1px solid var(--line)}
-.stat-n{font-size:22px;font-weight:600;color:var(--t1);line-height:1}
-.stat-l{font-size:10px;color:var(--t3);margin-top:3px}
-.pill{display:inline-flex;align-items:center;gap:5px;background:var(--s1);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--t2)}
-.live-dot{width:5px;height:5px;border-radius:50%;background:var(--rd);animation:pu 1.5s infinite;flex-shrink:0}
-@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
-.gcell{background:var(--bg);padding:16px 20px}
-.gcell-v{font-size:18px;font-weight:600;color:var(--t1)}
-.gcell-l{font-size:10px;color:var(--t3);margin-top:3px}
-
-/* ============ BUTTONS ============ */
-.btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:500;transition:opacity .15s;letter-spacing:.01em}
-.btn:active{opacity:.8}
-.btn-p{background:var(--btn-bg);color:var(--btn-txt)}
-.btn-p2{background:var(--acc2);color:#fff}
-.btn-s{background:var(--s2);color:var(--t2);border:1px solid var(--line2)}
-.btn-r{background:var(--rd);color:#fff}
-.btn-g{background:var(--gr);color:#0a1a12}
-.btn-sm{padding:10px 16px;width:auto;border-radius:10px;font-size:13px}
-
-/* ============ FORMS ============ */
-.form-wrap{padding:20px}
-.form-group{margin-bottom:16px}
-.form-label{font-size:11px;color:var(--t3);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase;font-weight:500}
-.form-input{background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:13px 16px;font-size:15px;color:var(--t1);width:100%;outline:none;transition:border-color .15s;-webkit-appearance:none}
-.form-input:focus{border-color:var(--acc)}
-.form-input::placeholder{color:var(--t3)}
-.form-hint{font-size:11px;color:var(--t3);margin-top:5px}
-.char-count{font-size:10px;color:var(--t3);text-align:right;margin-top:4px}
-select.form-input{background-image:none}
-
-/* ============ TOGGLE ============ */
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);cursor:pointer}
-.toggle-row.on{background:rgba(167,139,250,.04)}
-.toggle-name{font-size:14px;font-weight:500;color:var(--t1)}
-.toggle-sub{font-size:11px;color:var(--t3);margin-top:2px}
-.sw{width:40px;height:22px;border-radius:11px;background:var(--s3);position:relative;transition:background .2s;flex-shrink:0}
-.sw.on{background:var(--btn-bg)}
-.sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-.sw.on::after{left:21px}
-
-/* ============ SPLASH ============ */
-#screen-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;background:#0c0c0e!important}
-#screen-splash *{color:#f0f0f2!important}
-#screen-splash .btn-p{background:#a020f0!important;color:#fff!important}
-#screen-splash .btn-s{background:#1c1c1f!important;color:#8a8a90!important;border:1px solid #363639!important}
-.splash-logo{font-size:48px;font-weight:700;letter-spacing:.08em;color:var(--t1);margin-bottom:8px}
-.splash-sub{font-size:13px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:60px}
-.splash-tagline{font-size:16px;color:var(--t2);text-align:center;line-height:1.6;margin-bottom:50px;max-width:280px}
-
-/* ============ AUTH ============ */
-.auth-wrap{padding:30px 24px}
-.auth-title{font-size:22px;font-weight:600;color:var(--t1);margin-bottom:6px}
-.auth-sub{font-size:13px;color:var(--t3);margin-bottom:30px;line-height:1.5}
-.phone-input-wrap{display:flex;gap:8px;margin-bottom:12px}
-.country-code{background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:13px 14px;font-size:15px;color:var(--t1);width:80px;flex-shrink:0;text-align:center}
-.otp-inputs{display:flex;gap:10px;margin-bottom:20px}
-.otp-digit{flex:1;background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:16px 8px;font-size:22px;font-weight:600;text-align:center;color:var(--t1);outline:none;transition:border-color .15s;-webkit-appearance:none}
-.otp-digit:focus{border-color:var(--acc)}
-
-/* ============ PROFILE SETUP ============ */
-.setup-photo{display:flex;justify-content:center;padding:24px 0 16px}
-.photo-btn{width:90px;height:90px;border-radius:50%;background:var(--s2);border:2px dashed var(--line2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative}
-.photo-btn img{width:100%;height:100%;object-fit:cover}
-.photo-btn svg{width:24px;height:24px;stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round}
-.gender-btns{display:flex;gap:8px;margin-bottom:4px}
-.gender-btn{flex:1;background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:12px;font-size:13px;color:var(--t2);transition:all .15s;cursor:pointer}
-.gender-btn.sel{background:rgba(167,139,250,.1);border-color:var(--acc);color:var(--acc)}
-
-/* ============ HOME ============ */
-.home-coins{display:flex;align-items:center;gap:5px;background:var(--s2);border-radius:20px;padding:4px 10px;border:1px solid var(--line)}
-.coins-num{font-size:12px;font-weight:600;color:var(--yl)}
-.coins-icon{font-size:12px}
-
-/* ============ AI CHAT ============ */
-.chat-list{padding:16px 20px;display:flex;flex-direction:column;gap:8px}
-.chat-header{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--bg);position:sticky;top:0;z-index:10}
-.ai-av{width:32px;height:32px;border-radius:50%;background:var(--acc2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ai-av svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:1.5;stroke-linecap:round}
-.bubble{border-radius:14px;padding:10px 13px;font-size:14px;line-height:1.55;max-width:82%}
-.bubble.ai{background:var(--s2);color:var(--t2);border-radius:4px 14px 14px 14px;align-self:flex-start}
-.bubble.me{background:var(--acc2);color:#fff;border-radius:14px 14px 4px 14px;align-self:flex-end}
-.bubble.typing{display:flex;align-items:center;gap:4px;padding:12px 16px}
-.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);animation:tdot 1.2s infinite}
-.typing-dot:nth-child(2){animation-delay:.2s}
-.typing-dot:nth-child(3){animation-delay:.4s}
-@keyframes tdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
-.chips-row{display:flex;gap:6px;flex-wrap:wrap;align-self:flex-start}
-.ai-chip{background:var(--s2);border:1px solid var(--line2);border-radius:20px;padding:7px 14px;font-size:12px;color:var(--t2);cursor:pointer;transition:all .15s}
-.ai-chip:active,.ai-chip.sel{background:rgba(167,139,250,.1);border-color:var(--acc);color:var(--acc)}
-.chat-go{background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:14px 16px;cursor:pointer;align-self:stretch;margin-top:4px;transition:background .15s}
-.chat-go:active{background:var(--s1)}
-.chat-go-title{font-size:14px;font-weight:500;color:var(--t1)}
-.chat-go-sub{font-size:11px;color:var(--t3);margin-top:3px}
-.chat-input-area{padding:10px 16px calc(10px + var(--safe-b));border-top:1px solid var(--line);display:flex;gap:8px;background:var(--bg);position:sticky;bottom:0}
-.chat-text-input{flex:1;background:var(--s2);border:1px solid var(--line2);border-radius:22px;padding:10px 16px;font-size:14px;color:var(--t1);outline:none}
-.chat-text-input::placeholder{color:var(--t3)}
-.chat-send{width:38px;height:38px;border-radius:50%;background:var(--acc2);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:opacity .15s}
-.chat-send:active{opacity:.8}
-.chat-send svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round}
-
-/* ============ LIST ============ */
-.person-card{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);cursor:pointer;gap:12px;transition:background .1s}
-.person-card:active{background:var(--s1)}
-.pav{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0;position:relative}
-.pav-online::after{content:'';position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;background:var(--gr);border:2px solid var(--bg)}
-.pname{font-size:14px;font-weight:500;color:var(--t1)}
-.pmeta{font-size:11px;color:var(--t3);margin-top:2px}
-.tscore{margin-left:auto;text-align:right;flex-shrink:0}
-.ts-n{font-size:15px;font-weight:600;color:var(--gr)}
-.ts-l{font-size:9px;color:var(--t3);margin-top:1px}
-.locked{opacity:.3;pointer-events:none}
-
-/* ============ SIGNAL ============ */
-.signal-card{margin:16px 20px;background:var(--s1);border-radius:16px;border:1px solid var(--line);overflow:hidden}
-.signal-head{padding:16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
-.signal-av{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#fff;flex-shrink:0}
-.signal-body{padding:16px}
-.signal-tags{display:flex;gap:5px;margin-top:6px}
-.tag{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--gr)}
-.coin-box{background:var(--s2);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
-.cb-l{font-size:12px;color:var(--t2)}
-.cb-s{font-size:10px;color:var(--t3);margin-top:2px}
-.cb-r{font-size:17px;font-weight:600;color:var(--yl)}
-.refund-note{font-size:11px;color:var(--gr);background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-radius:8px;padding:8px 12px;margin-bottom:14px;line-height:1.5}
-
-/* ============ PASSPORT ============ */
-.passport-hero{text-align:center;padding:28px 20px 20px;border-bottom:1px solid var(--line)}
-.score-ring{position:relative;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
-.score-num{font-size:52px;font-weight:700;color:var(--t1);line-height:1}
-.score-lbl{font-size:10px;color:var(--t3)}
-.tier-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--acc);margin-top:8px}
-.proof-row{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid var(--line)}
-.pr-l{font-size:13px;color:var(--gr)}
-.pr-r{font-size:11px;color:var(--t3)}
-.points-row{display:flex;align-items:center;justify-content:space-between;padding:16px 20px}
-.pts-lbl{font-size:13px;color:var(--t2)}
-.pts-num{font-size:22px;font-weight:600;color:var(--t1)}
-
-/* ============ REPUTATION ============ */
-.rep-hero{padding:24px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px}
-.rep-score-wrap{text-align:center;flex-shrink:0}
-.rep-score-num{font-size:42px;font-weight:700;color:var(--t1);line-height:1}
-.rep-score-lbl{font-size:10px;color:var(--t3);margin-top:4px}
-.rep-info{flex:1}
-.rep-level{font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px}
-.prog-bar{height:4px;background:var(--s3);border-radius:2px;overflow:hidden;margin-bottom:6px}
-.prog-fill{height:100%;background:var(--acc);border-radius:2px;transition:width .5s ease}
-.rep-note{font-size:11px;color:var(--t3)}
-.rep-private{display:inline-flex;align-items:center;gap:4px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--gr);margin-top:6px}
-.bar-list{padding:16px 20px;border-bottom:1px solid var(--line)}
-.brow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.brow:last-child{margin-bottom:0}
-.b-name{font-size:12px;color:var(--t2);width:64px;flex-shrink:0}
-.b-track{flex:1;height:3px;background:var(--s3);border-radius:2px;overflow:hidden}
-.b-fill{height:100%;background:var(--acc);border-radius:2px}
-.b-pct{font-size:10px;color:var(--t3);width:24px;text-align:right}
-.lv-list{padding:16px 20px}
-.lv-card{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:8px;transition:all .15s}
-.lv-card.cur{border-color:var(--acc);background:rgba(167,139,250,.04)}
-.lv-tag{display:inline-block;background:var(--acc);color:#fff;font-size:9px;font-weight:600;border-radius:6px;padding:2px 7px;margin-bottom:6px;letter-spacing:.04em}
-.lv-name{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:2px}
-.lv-range{font-size:11px;color:var(--t3);margin-bottom:8px}
-.lv-perks{font-size:12px;color:var(--t2);line-height:1.7}
-
-/* ============ MARKET ============ */
-.market-card{margin:16px 20px;background:var(--s1);border-radius:16px;border:1px solid var(--line);overflow:hidden}
-.mc-top{padding:14px 16px;border-bottom:1px solid var(--line)}
-.mc-nums{display:flex}
-.mc-num{flex:1;text-align:center;padding:6px 0}
-.mc-num+.mc-num{border-left:1px solid var(--line)}
-.mc-n{font-size:22px;font-weight:600}
-.mc-l{font-size:10px;color:var(--t3);margin-top:2px}
-.mc-urgent{padding:10px 14px;background:rgba(248,113,113,.05);border-bottom:1px solid var(--line)}
-.mc-urgent-txt{font-size:12px;color:var(--rd);margin-bottom:8px}
-.mc-btns{display:flex;gap:8px}
-.mc-foot{padding:12px 16px}
-.venue-card{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);cursor:pointer;gap:12px;transition:background .1s}
-.venue-card:active{background:var(--s1)}
-.v-ic{width:42px;height:42px;border-radius:10px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.v-name{font-size:14px;font-weight:500;color:var(--t1)}
-.v-meta{font-size:11px;color:var(--t3);margin-top:2px}
-.v-offer{font-size:10px;color:var(--acc);margin-top:2px}
-.v-badge{margin-left:auto;text-align:right;flex-shrink:0}
-.vb-n{font-size:14px;font-weight:600;color:var(--gr)}
-.vb-l{font-size:9px;color:var(--t3)}
-.timer-big{font-size:20px;font-weight:600;color:var(--rd)}
-
-/* ============ MOMENT ============ */
-.moment-steps{padding:16px 20px}
-.step-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px}
-.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
-.step-num.done{background:rgba(52,211,153,.15);color:var(--gr);border:1px solid rgba(52,211,153,.3)}
-.step-num.active{background:rgba(167,139,250,.15);color:var(--acc);border:1px solid rgba(167,139,250,.3)}
-.step-num.inactive{background:var(--s2);color:var(--t3);border:1px solid var(--line)}
-.step-content{flex:1;padding-top:4px}
-.step-title{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:3px}
-.step-sub{font-size:11px;color:var(--t3);line-height:1.5}
-.moment-reward{display:flex;align-items:center;justify-content:space-between;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:12px;padding:12px 16px;margin:0 20px 16px}
-.mr-l{font-size:12px;color:var(--yl)}
-.mr-r{font-size:16px;font-weight:600;color:var(--yl)}
-
-/* ============ SETTINGS ============ */
-.settings-profile{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--line)}
-.settings-av{width:56px;height:56px;border-radius:50%;background:var(--acc2);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#fff;flex-shrink:0;overflow:hidden}
-.settings-av img{width:100%;height:100%;object-fit:cover}
-.settings-name{font-size:16px;font-weight:500;color:var(--t1)}
-.settings-sub{font-size:12px;color:var(--t3);margin-top:2px}
-.danger-row{color:var(--rd)}
-
-/* ============ INCOMING SIGNAL ============ */
-.signal-in-card{margin:10px 20px;background:var(--s1);border-radius:14px;border:1px solid var(--line);padding:14px 16px}
-.si-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.si-msg{background:var(--s2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--t2);font-style:italic;margin-bottom:10px}
-.si-actions{display:flex;gap:8px}
-.si-acc{flex:1;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);border-radius:10px;padding:10px;font-size:13px;font-weight:500;color:var(--gr);text-align:center;cursor:pointer;transition:background .15s}
-.si-acc:active{background:rgba(52,211,153,.2)}
-.si-rej{flex:1;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:10px;padding:10px;font-size:13px;font-weight:500;color:var(--rd);text-align:center;cursor:pointer;transition:background .15s}
-.si-rej:active{background:rgba(248,113,113,.15)}
-
-/* ============ EMPTY STATE ============ */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;text-align:center}
-.empty-icon{font-size:40px;margin-bottom:16px;opacity:.4}
-.empty-title{font-size:16px;font-weight:500;color:var(--t2);margin-bottom:6px}
-.empty-sub{font-size:13px;color:var(--t3);line-height:1.5}
-
-/* ============ LOADING ============ */
-.loading-overlay{position:fixed;inset:0;background:rgba(12,12,14,.85);display:flex;align-items:center;justify-content:center;z-index:999;display:none}
-.spinner{width:32px;height:32px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ============ TOAST ============ */
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--line2);border-radius:20px;padding:9px 18px;font-size:13px;color:var(--t1);z-index:998;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;max-width:80vw;text-align:center}
-.toast.show{opacity:1}
-
-/* ============ COIN PURCHASE MODAL ============ */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;display:none;align-items:flex-end}
-.modal-bg.show{display:flex}
-.modal-sheet{background:var(--s1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + var(--safe-b));width:100%;border:1px solid var(--line);max-height:80vh;overflow-y:auto}
-.modal-handle{width:36px;height:4px;background:var(--line2);border-radius:2px;margin:0 auto 16px}
-.coin-option{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;border:1px solid var(--line);transition:all .15s}
-.coin-option:active,.coin-option.sel{border-color:var(--acc);background:rgba(167,139,250,.06)}
-.co-coins{font-size:15px;font-weight:600;color:var(--yl)}
-.co-price{font-size:13px;color:var(--t2)}
-</style>
+<link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 <div id="app">
@@ -453,8 +133,8 @@ select.form-input{background-image:none}
   <!-- Stats -->
   <div class="stats-row" id="home-stats">
     <div class="stat-item"><div class="stat-n" id="stat-active">—</div><div class="stat-l">지금 가능</div></div>
-    <div class="stat-item"><div class="stat-n" id="stat-dist">—</div><div class="stat-l">반경</div></div>
-    <div class="stat-item"><div class="stat-n" id="stat-new">—</div><div class="stat-l">신규</div></div>
+    <div class="stat-item"><div class="stat-n" id="stat-dist">—</div><div class="stat-l">km</div></div>
+    <div class="stat-item"><div class="stat-n" id="stat-new">—</div><div class="stat-l">New</div></div>
   </div>
 
   <!-- AI CTA -->
@@ -468,17 +148,17 @@ select.form-input{background-image:none}
 
   <div class="row" onclick="goScreen('screen-market')">
     <div class="row-ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-    <div><div class="row-title">Signal Market</div><div class="row-sub" id="market-sub">실시간 수요 · 공급</div></div>
+    <div><div class="row-title">라이브</div><div class="row-sub" id="market-sub">실시간 수요 · 공급</div></div>
     <div class="row-right"><span id="market-timer" style="font-size:11px;color:var(--rd);font-weight:500"></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
   </div>
 
   <div class="row" onclick="goScreen('screen-list')">
     <div class="row-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-    <div><div class="row-title">매칭 리스트</div><div class="row-sub" id="list-count-sub">오늘의 추천</div></div>
+    <div><div class="row-title">매칭 리스트</div><div class="row-sub" id="list-count-sub">주변 추천</div></div>
     <div class="row-right"><svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
   </div>
 
-  <!-- Incoming Signals (female) -->
+  <!-- 받은 Signals (female) -->
   <div id="incoming-section" style="display:none">
     <div class="section-label">받은 Signal</div>
     <div id="incoming-list"></div>
@@ -490,7 +170,7 @@ select.form-input{background-image:none}
   <div class="topbar">
     <button class="tb-back" onclick="goBack()">
       <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-      AI 매칭
+      AI Match
     </button>
     <div style="display:flex;align-items:center;gap:5px"><div class="live-dot"></div><span style="font-size:11px;color:var(--gr)">온라인</span></div>
   </div>
@@ -508,7 +188,7 @@ select.form-input{background-image:none}
   <div class="topbar">
     <button class="tb-back" onclick="goBack()">
       <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-      매칭 리스트
+      List
     </button>
     <div style="font-size:11px;color:var(--t3)" id="list-count-badge"></div>
   </div>
@@ -537,10 +217,10 @@ select.form-input{background-image:none}
       <input class="form-input" id="sig-msg" maxlength="20" placeholder="한줄 메시지" oninput="document.getElementById('sig-cnt').textContent=this.value.length+'/20'">
       <div class="char-count" id="sig-cnt">0/20</div>
       <div class="coin-box">
-        <div><div class="cb-l">Safe Bet 예치</div><div class="cb-s">수락 시 차감 · 무응답 12시간 자동 환불</div></div>
+        <div><div class="cb-l">Free Try</div><div class="cb-s">무응답 12시간 자동 환불</div></div>
         <div class="cb-r" id="sig-cost">3C</div>
       </div>
-      <div class="refund-note">✓ 무응답 시 자동 환불 &nbsp;·&nbsp; 연결 깊이에 따라 최대 6C 차감</div>
+      <div class="refund-note">✓ Auto refund if no reply &nbsp;·&nbsp; Max 6 크레딧</div>
       <button class="btn btn-p" onclick="sendSignal()">Signal 보내기</button>
       <button class="btn btn-s" style="margin-top:8px" onclick="goBack()">← 돌아가기</button>
     </div>
@@ -549,46 +229,81 @@ select.form-input{background-image:none}
 
 <!-- ====== PASSPORT (female) ====== -->
 <div id="screen-passport" class="screen">
-  <div class="topbar"><div class="tb-logo" style="font-size:14px;font-weight:500">Passport</div></div>
+  <div class="topbar"><div class="tb-logo" style="font-size:14px;font-weight:500">°C</div></div>
+
+  <!-- 온도 히어로 -->
   <div class="passport-hero">
-    <div class="score-num" id="pp-score">—</div>
-    <div class="score-lbl">Trust Score</div>
+    <div style="font-size:11px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">나의 온도</div>
+    <div style="display:flex;align-items:flex-start;justify-content:center;gap:4px">
+      <div class="score-num" id="pp-score">—</div>
+      <div style="font-size:28px;font-weight:600;color:var(--t1);margin-top:8px">°C</div>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-top:4px">신뢰의 체온</div>
     <div><div class="tier-badge" id="pp-tier">◈ —</div></div>
   </div>
+
+  <!-- 온도 지표 그리드 -->
   <div class="grid2">
-    <div class="gcell"><div class="gcell-v" id="pp-resp">—</div><div class="gcell-l">응답 신뢰도</div></div>
-    <div class="gcell"><div class="gcell-v" id="pp-proof">0회</div><div class="gcell-l">인증 Proof</div></div>
+    <div class="gcell"><div class="gcell-v" id="pp-resp">—</div><div class="gcell-l">Response 레이트</div></div>
+    <div class="gcell"><div class="gcell-v" id="pp-proof">0</div><div class="gcell-l">만남 횟수</div></div>
     <div class="gcell"><div class="gcell-v" id="pp-pledge">—</div><div class="gcell-l">약속 이행</div></div>
-    <div class="gcell"><div class="gcell-v" id="pp-report" style="color:var(--gr)">0건</div><div class="gcell-l">신고</div></div>
+    <div class="gcell"><div class="gcell-v" id="pp-report" style="color:var(--gr)">0</div><div class="gcell-l">Reports</div></div>
   </div>
   <div class="divider"></div>
-  <div class="section-label">최근 Proof</div>
-  <div id="proof-list">
-    <div class="empty-state" style="padding:30px">
-      <div class="empty-icon">✦</div>
-      <div class="empty-title">아직 Proof가 없어요</div>
-      <div class="empty-sub">첫 만남을 인증하면 Trust Score가 시작됩니다</div>
+
+  <!-- 온도 올리는 법 -->
+  <div style="padding:14px 20px;background:rgba(255,110,180,.05);border-bottom:1px solid var(--line)">
+    <div style="font-size:11px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">온도 올리는 법</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <div style="font-size:18px">🔥</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--t1)">Moment 완료</div><div style="font-size:11px;color:var(--t3)">인증된 만남마다 +5°C</div></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <div style="font-size:18px">⚡</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--t1)">빠른 응답</div><div style="font-size:11px;color:var(--t3)">빠른 답장 +2°C</div></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="font-size:18px">❄️</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--t1)">No-show</div><div style="font-size:11px;color:var(--rd)">−10°C penalty</div></div>
     </div>
   </div>
+
+  <!-- 최근 Moment -->
+  <div class="section-label">최근 Moment</div>
+  <div id="proof-list">
+    <div class="empty-state" style="padding:30px">
+      <div style="font-size:32px;margin-bottom:12px">🌡️</div>
+      <div class="empty-title">아직 Moment가 없어요</div>
+      <div class="empty-sub">첫 만남을 완료하면 온도가 시작됩니다</div>
+    </div>
+  </div>
+
+  <!-- 포인트 적립 -->
   <div class="points-row">
-    <div><div class="pts-lbl">이번 주 적립</div><div style="font-size:10px;color:var(--t3);margin-top:2px">Proof 완료 기준</div></div>
-    <div class="pts-num" id="pp-points">0<span style="font-size:13px;color:var(--t3);font-weight:400">P</span></div>
+    <div><div class="pts-lbl">이번 주 적립</div><div style="font-size:10px;color:var(--t3);margin-top:2px">Moment 기준</div></div>
+    <div class="pts-num" id="pp-points">0<span style="font-size:13px;color:var(--t3);font-weight:400"> pts</span></div>
   </div>
   <div style="padding:0 20px 16px">
-    <button class="btn btn-p" onclick="goScreen('screen-moment')">Moment 인증하기</button>
+    <button class="btn btn-p" onclick="goScreen('screen-moment')">Moment 시작</button>
   </div>
 </div>
 
 <!-- ====== REPUTATION (male) ====== -->
 <div id="screen-rep" class="screen">
   <div class="topbar">
-    <div class="tb-logo" style="font-size:14px;font-weight:500">Reputation</div>
-    <div style="font-size:10px;color:var(--t3)">비공개</div>
+    <div class="tb-logo" style="font-size:14px;font-weight:500">°C</div>
+    <div style="font-size:10px;color:var(--t3)">Private · AI only</div>
   </div>
+
+  <!-- 온도 히어로 (남성) -->
   <div class="rep-hero">
     <div class="rep-score-wrap">
-      <div class="rep-score-num" id="rep-score">—</div>
-      <div class="rep-score-lbl">점수</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:4px">내 온도</div>
+      <div style="display:flex;align-items:flex-start;gap:2px">
+        <div class="rep-score-num" id="rep-score">—</div>
+        <div style="font-size:18px;font-weight:600;color:var(--t1);margin-top:4px">°</div>
+      </div>
+      <div class="rep-score-lbl">Score</div>
     </div>
     <div class="rep-info">
       <div class="rep-level" id="rep-level">—</div>
@@ -597,21 +312,25 @@ select.form-input{background-image:none}
       <div class="rep-private">비공개 · AI 매칭에만 반영</div>
     </div>
   </div>
+
+  <!-- Score 지표 바 -->
   <div class="bar-list">
     <div class="brow"><div class="b-name">노쇼 없음</div><div class="b-track"><div class="b-fill" id="b1" style="width:0%"></div></div><div class="b-pct">25%</div></div>
     <div class="brow"><div class="b-name">Moment</div><div class="b-track"><div class="b-fill" id="b2" style="width:0%"></div></div><div class="b-pct">25%</div></div>
     <div class="brow"><div class="b-name">대화 품질</div><div class="b-track"><div class="b-fill" id="b3" style="width:0%"></div></div><div class="b-pct">25%</div></div>
     <div class="brow"><div class="b-name">신고 없음</div><div class="b-track"><div class="b-fill" id="b4" style="width:100%"></div></div><div class="b-pct">25%</div></div>
   </div>
-  <div class="section-label">레벨 혜택</div>
+
+  <!-- 온도 단계 -->
+  <div class="section-label">온도 단계</div>
   <div class="lv-list" id="lv-list"></div>
 </div>
 
 <!-- ====== MARKET ====== -->
 <div id="screen-market" class="screen">
   <div class="topbar">
-    <div class="tb-logo" style="font-size:14px;font-weight:500">Signal Market</div>
-    <div class="pill"><div class="live-dot"></div><span>Live</span></div>
+    <div class="tb-logo" style="font-size:14px;font-weight:500">라이브</div>
+    <div class="pill"><div class="live-dot"></div><span>라이브</span></div>
   </div>
   <div class="stats-row">
     <div class="stat-item"><div class="stat-n" id="mkt-f" style="color:#f9a8d4">—</div><div class="stat-l">여성 활성</div></div>
@@ -627,16 +346,16 @@ select.form-input{background-image:none}
       </div>
     </div>
     <div class="mc-foot">
-      <div style="font-size:11px;color:var(--t3);text-align:center">코인이 부족하면 우측 상단에서 충전하세요</div>
+      <div style="font-size:11px;color:var(--t3);text-align:center">Tap the coin icon to top up 크레딧</div>
     </div>
   </div>
-  <div class="section-label">Tonight Venue</div>
-  <div class="venue-card" onclick="showToast('Café Nuit — Moment 장소 설정됨')">
+  <div class="section-label">오늘의 장소</div>
+  <div class="venue-card" onclick="showToast('Café Nuit — set as Moment location')">
     <div class="v-ic">☕</div>
     <div><div class="v-name">Café Nuit</div><div class="v-meta">카페 · 자정까지 · 0.8km</div><div class="v-offer">여성 아메리카노 무료</div></div>
     <div class="v-badge"><div class="vb-n" id="venue1-cnt">—</div><div class="vb-l">Moment</div></div>
   </div>
-  <div class="venue-card" onclick="showToast('Bar Velvet — Moment 장소 설정됨')">
+  <div class="venue-card" onclick="showToast('Bar Velvet — set as Moment location')">
     <div class="v-ic">🍷</div>
     <div><div class="v-name">Bar Velvet</div><div class="v-meta">바 · 새벽 2시 · 1.3km</div><div class="v-offer">여성 하우스와인 무료</div></div>
     <div class="v-badge"><div class="vb-n" id="venue2-cnt">—</div><div class="vb-l">Moment</div></div>
@@ -648,51 +367,51 @@ select.form-input{background-image:none}
   <div class="topbar">
     <button class="tb-back" onclick="goBack()">
       <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-      Moment 인증
+      Moment
     </button>
   </div>
   <div class="moment-reward">
-    <div class="mr-l">완료 시 예상 보상</div>
-    <div class="mr-r">+180P</div>
+    <div class="mr-l">완료 시 보상</div>
+    <div class="mr-r">+180 pts</div>
   </div>
   <div class="moment-steps">
     <div class="step-row">
       <div class="step-num done" id="step1-ic">✓</div>
       <div class="step-content">
-        <div class="step-title">장소 도착</div>
-        <div class="step-sub">GPS로 자동 확인됩니다</div>
+        <div class="step-title">도착</div>
+        <div class="step-sub">GPS로 자동 확인</div>
       </div>
     </div>
     <div class="step-row">
       <div class="step-num active" id="step2-ic">2</div>
       <div class="step-content">
         <div class="step-title">상대방 도착 확인</div>
-        <div class="step-sub">상대방이 같은 장소에 있어야 합니다</div>
+        <div class="step-sub">상대방도 같은 장소에 있어야 해요</div>
       </div>
     </div>
     <div class="step-row">
       <div class="step-num inactive" id="step3-ic">3</div>
       <div class="step-content">
-        <div class="step-title">만남 완료 상호 확인</div>
-        <div class="step-sub">양측 모두 확인해야 Proof가 기록됩니다</div>
+        <div class="step-title">만남 확인</div>
+        <div class="step-sub">양측 모두 확인해야 기록됩니다</div>
       </div>
     </div>
     <div class="step-row">
       <div class="step-num inactive" id="step4-ic">4</div>
       <div class="step-content">
-        <div class="step-title">항목 평가</div>
-        <div class="step-sub">안전 · 매너 · 프로필 일치 여부</div>
+        <div class="step-title">레이트</div>
+        <div class="step-sub">안전·매너 평가</div>
       </div>
     </div>
   </div>
   <div style="padding:0 20px 16px">
-    <button class="btn btn-p" onclick="completeMoment()">만남 완료 인증하기</button>
+    <button class="btn btn-p" onclick="completeMoment()">컴플릿</button>
   </div>
 </div>
 
 <!-- ====== SETTINGS ====== -->
 <div id="screen-settings" class="screen">
-  <div class="topbar"><div class="tb-logo" style="font-size:14px;font-weight:500">설정</div></div>
+  <div class="topbar"><div class="tb-logo" style="font-size:14px;font-weight:500">Me</div></div>
   <div class="settings-profile">
     <div class="settings-av" id="settings-av"></div>
     <div>
@@ -707,12 +426,12 @@ select.form-input{background-image:none}
   </div>
   <div class="row" onclick="showCoinShop()">
     <div class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-    <div><div class="row-title">코인 충전</div><div class="row-sub" id="settings-coins">현재 0C</div></div>
+    <div><div class="row-title">크레딧</div><div class="row-sub" id="settings-coins">잔액 0C</div></div>
     <div class="row-right"><svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
   </div>
   <div class="row" onclick="showToast('준비중입니다')">
     <div class="row-ic"><svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div>
-    <div><div class="row-title">차단 관리</div></div>
+    <div><div class="row-title">Block 매칭 리스트</div></div>
     <div class="row-right"><svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
   </div>
   <div class="row" onclick="showToast('준비중입니다')">
@@ -731,23 +450,23 @@ select.form-input{background-image:none}
   <div class="nav-inner">
     <div class="ni on" id="n-home" onclick="goScreen('screen-home')">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span>홈</span>
+      <span>Home</span>
     </div>
     <div class="ni" id="n-ai" onclick="goScreen('screen-ai')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-      <span>AI</span>
+      <span>AI 매칭</span>
     </div>
     <div class="ni" id="n-market" onclick="goScreen('screen-market')">
       <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span>Market</span>
+      <span>라이브</span>
     </div>
     <div class="ni" id="n-pp" onclick="goPP()">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span id="n-pp-lbl">Passport</span>
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+      <span id="n-pp-lbl">°C</span>
     </div>
     <div class="ni" id="n-settings" onclick="goScreen('screen-settings')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span>설정</span>
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Me</span>
     </div>
   </div>
 </div>
@@ -762,1164 +481,18 @@ select.form-input{background-image:none}
 <div class="modal-bg" id="coin-modal" onclick="closeCoinModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div style="font-size:16px;font-weight:500;margin-bottom:4px">코인 충전</div>
-    <div style="font-size:12px;color:var(--t3);margin-bottom:16px">Signal 전송, 부스팅에 사용됩니다</div>
-    <div class="coin-option" onclick="buyCoin(10,1900)"><div><div class="co-coins">🪙 10 코인</div></div><div class="co-price">₩1,900</div></div>
-    <div class="coin-option" onclick="buyCoin(30,4900)"><div><div class="co-coins">🪙 30 코인</div><div style="font-size:10px;color:var(--gr)">인기</div></div><div class="co-price">₩4,900</div></div>
-    <div class="coin-option" onclick="buyCoin(100,12900)"><div><div class="co-coins">🪙 100 코인</div><div style="font-size:10px;color:var(--acc)">최대 절약</div></div><div class="co-price">₩12,900</div></div>
+    <div style="font-size:16px;font-weight:500;margin-bottom:4px">크레딧</div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:16px">Signal 전송, 부스팅에 사용</div>
+    <div class="coin-option" onclick="buyCoin(10,1900)"><div><div class="co-coins">🪙 10 크레딧</div></div><div class="co-price">₩1,900</div></div>
+    <div class="coin-option" onclick="buyCoin(30,4900)"><div><div class="co-coins">🪙 30 크레딧</div><div style="font-size:10px;color:var(--gr)">인기</div></div><div class="co-price">₩4,900</div></div>
+    <div class="coin-option" onclick="buyCoin(100,12900)"><div><div class="co-coins">🪙 100 크레딧</div><div style="font-size:10px;color:var(--acc)">최대 절약</div></div><div class="co-price">₩12,900</div></div>
     <div style="height:12px"></div>
     <button class="btn btn-s" onclick="closeCoinModal()">닫기</button>
   </div>
 </div>
 
 </div><!-- /app -->
-
-<script>
-// ============================================================
-//  ██╗   ██╗██████╗ ██╗ █████╗
-//  ██║   ██║██╔══██╗██║██╔══██╗
-//  ██║   ██║██████╔╝██║███████║
-//  ██║   ██║██╔══██╗██║██╔══██║
-//  ╚██████╔╝██║  ██║██║██║  ██║
-//   ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
-//  MVP v1.0 — Built by Claude AI
-// ============================================================
-
-// ============================================================
-// [1] ⚙️  CONFIG — 아래 값을 Firebase 콘솔에서 복사해서 넣으세요
-// ============================================================
-const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
-};
-
-// Claude API 키 (https://console.anthropic.com)
-const CLAUDE_API_KEY = "YOUR_CLAUDE_API_KEY";
-
-// Tonight Mode 운영 시간 (24h 기준)
-const TONIGHT_START = 18; // 오후 6시
-const TONIGHT_END = 24;   // 자정
-
-// ============================================================
-// [2] 🔥 Firebase Init
-// ============================================================
-let db, auth, rtdb;
-let firebaseReady = false;
-
-function initFirebase() {
-  try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    db = firebase.firestore();
-    auth = firebase.auth();
-    rtdb = firebase.database();
-    firebaseReady = true;
-  } catch(e) {
-    // 데모 모드로 실행
-  }
-}
-
-// ============================================================
-// [3] 📦 App State
-// ============================================================
-const state = {
-  user: null,           // Firebase auth user
-  profile: null,        // Firestore user doc
-  tonight: false,       // Tonight Mode
-  location: null,       // {lat, lng}
-  matches: [],          // 현재 매칭 리스트
-  selectedMatch: null,  // Signal 보낼 상대
-  chatHistory: [],      // AI 채팅 히스토리
-  screenHistory: [],    // 뒤로가기용
-  coins: 0,
-  mktInterval: null,
-  mktSec: 2220,
-  incomingSignals: [],
-};
-
-// ============================================================
-// [4] 🧭 Navigation
-// ============================================================
-const NAV_SCREENS = ['screen-home','screen-ai','screen-market','screen-passport','screen-rep','screen-settings'];
-let currentScreen = 'screen-splash';
-
-function goScreen(id) {
-  if (id === currentScreen) return;
-  state.screenHistory.push(currentScreen);
-  const prev = document.getElementById(currentScreen);
-  const next = document.getElementById(id);
-  if (prev) prev.classList.remove('active');
-  if (next) next.classList.add('active');
-  currentScreen = id;
-
-  // Nav visibility
-  const showNav = NAV_SCREENS.includes(id);
-  document.getElementById('nav').style.display = showNav ? 'block' : 'none';
-
-  // Nav active state
-  updateNavActive(id);
-
-  // Screen-specific init
-  onScreenEnter(id);
-}
-
-function goBack() {
-  const prev = state.screenHistory.pop();
-  if (prev) {
-    const curr = document.getElementById(currentScreen);
-    const prevEl = document.getElementById(prev);
-    if (curr) curr.classList.remove('active');
-    if (prevEl) prevEl.classList.add('active');
-    currentScreen = prev;
-    updateNavActive(prev);
-  }
-}
-
-function updateNavActive(id) {
-  const map = {
-    'screen-home': 'n-home',
-    'screen-ai': 'n-ai',
-    'screen-market': 'n-market',
-    'screen-passport': 'n-pp',
-    'screen-rep': 'n-pp',
-    'screen-settings': 'n-settings'
-  };
-  document.querySelectorAll('.ni').forEach(n => {
-    n.classList.remove('on');
-    n.querySelectorAll('svg').forEach(s => s.style.stroke = 'var(--t3)');
-    const sp = n.querySelector('span');
-    if (sp) sp.style.color = 'var(--t3)';
-  });
-  const nid = map[id];
-  if (nid) {
-    const el = document.getElementById(nid);
-    if (el) {
-      el.classList.add('on');
-      el.querySelectorAll('svg').forEach(s => s.style.stroke = 'var(--acc)');
-      const sp = el.querySelector('span');
-      if (sp) sp.style.color = 'var(--acc)';
-    }
-  }
-}
-
-function goPP() {
-  if (state.profile?.gender === 'f') {
-    goScreen('screen-passport');
-  } else {
-    goScreen('screen-rep');
-  }
-}
-
-function onScreenEnter(id) {
-  if (id === 'screen-home') renderHome();
-  if (id === 'screen-list') renderList();
-  if (id === 'screen-passport') renderPassport();
-  if (id === 'screen-rep') renderReputation();
-  if (id === 'screen-market') renderMarket();
-  if (id === 'screen-settings') renderSettings();
-  if (id === 'screen-ai') initChat();
-}
-
-// ============================================================
-// [5] 🔐 Auth
-// ============================================================
-let confirmationResult = null;
-
-function formatPhone(input) {
-  let v = input.value.replace(/\D/g, '');
-  if (v.startsWith('0')) v = v.slice(1);
-  input.value = v;
-}
-
-async function sendOTP() {
-  const phone = document.getElementById('phone-input').value.replace(/\D/g,'');
-  if (phone.length < 9) { showToast('전화번호를 확인해주세요'); return; }
-
-  if (!firebaseReady) {
-    // 데모 모드
-    showToast('데모: 123456 입력');
-    const sub = document.getElementById('otp-sub');
-    sub.textContent = '데모 모드 — 123456 입력';
-    goScreen('screen-otp');
-    return;
-  }
-
-  showLoading(true);
-  try {
-    const recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-    confirmationResult = await auth.signInWithPhoneNumber('+82' + phone, recaptchaVerifier);
-    document.getElementById('otp-sub').textContent = `+82${phone}으로 인증번호를 보냈어요`;
-    goScreen('screen-otp');
-  } catch(e) {
-    showToast('전송 실패: ' + e.message);
-  }
-  showLoading(false);
-}
-
-function otpInput(el, idx) {
-  if (el.value.length === 1) {
-    const next = document.querySelectorAll('.otp-digit')[idx + 1];
-    if (next) next.focus();
-    // 6자리 자동 확인
-    const all = Array.from(document.querySelectorAll('.otp-digit')).map(i => i.value).join('');
-    if (all.length === 6) verifyOTP();
-  }
-}
-
-async function verifyOTP() {
-  const code = Array.from(document.querySelectorAll('.otp-digit')).map(i => i.value).join('');
-  if (code.length < 6) { showToast('6자리를 입력해주세요'); return; }
-
-  if (!firebaseReady || !confirmationResult) {
-    // 데모 모드
-    if (code === '123456') {
-      state.user = { uid: 'demo_' + Date.now(), phoneNumber: '+82010demo' };
-      await checkProfile();
-    } else {
-      showToast('데모: 123456을 입력하세요');
-    }
-    return;
-  }
-
-  showLoading(true);
-  try {
-    const result = await confirmationResult.confirm(code);
-    state.user = result.user;
-    await checkProfile();
-  } catch(e) {
-    showToast('인증 실패: 코드를 확인해주세요');
-  }
-  showLoading(false);
-}
-
-async function checkProfile() {
-  if (!firebaseReady) {
-    // 데모 모드
-    const saved = localStorage.getItem('uria_demo_profile');
-    if (saved) {
-      state.profile = JSON.parse(saved);
-      enterApp();
-    } else {
-      goScreen('screen-setup');
-    }
-    return;
-  }
-
-  const doc = await db.collection('users').doc(state.user.uid).get();
-  if (doc.exists && doc.data().nick) {
-    state.profile = doc.data();
-    enterApp();
-  } else {
-    goScreen('screen-setup');
-  }
-}
-
-// 개발자 빠른 진입
-function devBypass() {
-  state.user = { uid: 'dev_user_01', phoneNumber: '+82010test' };
-  const saved = localStorage.getItem('uria_demo_profile');
-  if (saved) {
-    state.profile = JSON.parse(saved);
-    enterApp();
-  } else {
-    // 기본 데모 프로필
-    state.profile = {
-      uid: 'dev_user_01',
-      nick: 'Duke',
-      gender: 'm',
-      age: '30대 초반',
-      bio: '안녕하세요',
-      coins: 47,
-      trustScore: 72,
-      momentCount: 8,
-      reportCount: 0,
-      responseRate: 96,
-      noShowRate: 96,
-    };
-    localStorage.setItem('uria_demo_profile', JSON.stringify(state.profile));
-    enterApp();
-  }
-}
-
-function enterApp() {
-  state.coins = state.profile.coins || 10;
-  getLocation();
-  startClock();
-  startMarketTimer();
-  loadDemoData();
-
-  // Set passport nav label
-  if (state.profile.gender === 'f') {
-    document.getElementById('n-pp-lbl').textContent = 'Passport';
-  } else {
-    document.getElementById('n-pp-lbl').textContent = 'Rep';
-  }
-
-  goScreen('screen-home');
-  document.getElementById('nav').style.display = 'block';
-}
-
-// ============================================================
-// [6] 👤 Profile Setup
-// ============================================================
-let selectedGender = '';
-let photoDataUrl = '';
-
-function selectGender(g) {
-  selectedGender = g;
-  document.getElementById('g-f').classList.toggle('sel', g === 'f');
-  document.getElementById('g-m').classList.toggle('sel', g === 'm');
-}
-
-function triggerPhotoUpload() {
-  document.getElementById('photo-file').click();
-}
-
-function previewPhoto(input) {
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      photoDataUrl = e.target.result;
-      const prev = document.getElementById('photo-preview');
-      prev.src = photoDataUrl;
-      prev.style.display = 'block';
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
-}
-
-async function saveProfile() {
-  const nick = document.getElementById('setup-nick').value.trim();
-  const age = document.getElementById('setup-age').value;
-  const bio = document.getElementById('setup-bio').value.trim();
-
-  if (!nick) { showToast('닉네임을 입력해주세요'); return; }
-  if (!selectedGender) { showToast('성별을 선택해주세요'); return; }
-  if (!age) { showToast('나이대를 선택해주세요'); return; }
-
-  showLoading(true);
-
-  const profileData = {
-    uid: state.user.uid,
-    nick, gender: selectedGender, age, bio,
-    photo: photoDataUrl,
-    coins: 10,
-    trustScore: 0,
-    reputationScore: 0,
-    momentCount: 0,
-    reportCount: 0,
-    responseRate: 100,
-    noShowRate: 100,
-    createdAt: Date.now()
-  };
-
-  if (firebaseReady) {
-    await db.collection('users').doc(state.user.uid).set(profileData);
-  } else {
-    localStorage.setItem('uria_demo_profile', JSON.stringify(profileData));
-  }
-
-  state.profile = profileData;
-  enterApp();
-  showLoading(false);
-}
-
-// ============================================================
-// [7] 📍 Location
-// ============================================================
-function getLocation() {
-  if (!navigator.geolocation) { state.location = { lat: 37.5172, lng: 127.0473 }; return; }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      state.location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      updatePresence();
-      updateHomeStats();
-    },
-    () => { state.location = { lat: 37.5172, lng: 127.0473 }; }
-  );
-}
-
-function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// ============================================================
-// [8] 🌙 Tonight Mode
-// ============================================================
-function toggleTonight() {
-  state.tonight = !state.tonight;
-  const sw = document.getElementById('tonight-sw');
-  const toggle = document.getElementById('tonight-toggle');
-  const sub = document.getElementById('tonight-sub');
-  const app = document.getElementById('app');
-  sw.classList.toggle('on', state.tonight);
-  toggle.classList.toggle('on', state.tonight);
-  sub.textContent = state.tonight ? '지금 가능한 사람들과 연결 중' : '오늘 가능한 사람들과 연결';
-
-  // 테마 전환: Tonight ON → 블랙+핑크 / OFF → 화이트+퍼플
-  app.classList.toggle('tonight-on', state.tonight);
-  document.body.classList.toggle('tonight-on', state.tonight);
-  document.querySelector('meta[id="theme-color-meta"]')
-    ?.setAttribute('content', state.tonight ? '#0c0c0e' : '#ffffff');
-
-  updatePresence();
-  if (state.tonight) {
-    showToast('Tonight Mode ON — 매칭 시작!');
-    loadMatches();
-  } else {
-    showToast('Tonight Mode OFF');
-  }
-  saveProfileLocal();
-}
-
-function updatePresence() {
-  if (!firebaseReady || !state.user) return;
-  const ref = rtdb.ref(`presence/${state.user.uid}`);
-  ref.set({
-    uid: state.user.uid,
-    tonight: state.tonight,
-    lat: state.location?.lat || 0,
-    lng: state.location?.lng || 0,
-    gender: state.profile?.gender || 'm',
-    nick: state.profile?.nick || '',
-    age: state.profile?.age || '',
-    trustScore: state.profile?.trustScore || 0,
-    updatedAt: Date.now()
-  });
-  ref.onDisconnect().remove();
-}
-
-// ============================================================
-// [9] 🏠 Home Screen
-// ============================================================
-function renderHome() {
-  updateCoinsUI();
-  updateHomeStats();
-
-  // Incoming signals for female
-  if (state.profile?.gender === 'f') {
-    renderIncomingSignals();
-  }
-}
-
-function updateHomeStats() {
-  document.getElementById('stat-active').textContent = state.matches.length || getDemoCount();
-  document.getElementById('stat-dist').textContent = '2.1km';
-  document.getElementById('stat-new').textContent = Math.floor(Math.random() * 5) + 1;
-  document.getElementById('list-count-sub').textContent = `조건 맞는 ${state.matches.length || 4}명`;
-}
-
-function getDemoCount() {
-  const h = new Date().getHours();
-  if (h >= 18 && h < 24) return Math.floor(Math.random()*8)+5;
-  return Math.floor(Math.random()*3)+1;
-}
-
-function renderIncomingSignals() {
-  const section = document.getElementById('incoming-section');
-  const list = document.getElementById('incoming-list');
-
-  if (state.incomingSignals.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
-
-  section.style.display = 'block';
-  list.innerHTML = state.incomingSignals.map((sig, i) => `
-    <div class="signal-in-card">
-      <div class="si-head">
-        <div class="pav" style="background:${getAvatarColor(sig.nick)};width:36px;height:36px;font-size:13px">${sig.nick[0]}</div>
-        <div>
-          <div style="font-size:13px;font-weight:500;color:var(--t1)">${sig.nick}님</div>
-          <div style="font-size:10px;color:var(--t3)">${sig.meta}</div>
-        </div>
-        <div style="margin-left:auto;font-size:12px;font-weight:500;color:var(--gr)">${sig.repLevel}</div>
-      </div>
-      <div class="si-msg">"${sig.message}"</div>
-      <div class="si-actions">
-        <div class="si-acc" onclick="acceptSignal(${i})">수락</div>
-        <div class="si-rej" onclick="rejectSignal(${i})">거절</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function acceptSignal(i) {
-  const sig = state.incomingSignals[i];
-  showToast(`${sig.nick}님과 연결됐습니다!`);
-  state.incomingSignals.splice(i, 1);
-  renderIncomingSignals();
-  // Update points
-  if (state.profile) {
-    state.profile.trustScore = (state.profile.trustScore || 0) + 5;
-    saveProfileLocal();
-  }
-}
-
-function rejectSignal(i) {
-  const sig = state.incomingSignals[i];
-  showToast(`${sig.nick}님의 Signal을 거절했습니다`);
-  state.incomingSignals.splice(i, 1);
-  renderIncomingSignals();
-}
-
-// ============================================================
-// [10] 🤖 AI Chat — Claude API
-// ============================================================
-const AI_SYSTEM = `당신은 URIA 앱의 AI 매칭 어시스턴트입니다.
-사용자의 조건을 파악해서 근처에서 오늘 만날 수 있는 사람을 찾아드립니다.
-대화를 통해 자연스럽게 원하는 나이대, 분위기, 시간, 장소를 파악하세요.
-조건이 충분히 파악되면 "매칭 리스트 준비됐어요"라고 말하고 JSON으로 조건을 반환하세요:
-{"ready": true, "conditions": {"age": "30대", "vibe": "조용한", "time": "저녁"}}
-한국어로 자연스럽게 대화하세요. 짧고 친근하게.`;
-
-let chatReady = false;
-
-function initChat() {
-  if (chatReady) return;
-  chatReady = true;
-  state.chatHistory = [];
-  const msgs = document.getElementById('chat-messages');
-  msgs.innerHTML = '';
-  addAIMessage('오늘 밤 시간 있으세요? 어떤 분 만나고 싶으신지 말해주세요 ✦');
-}
-
-function addAIMessage(text) {
-  const msgs = document.getElementById('chat-messages');
-  const div = document.createElement('div');
-
-  if (text === '__typing__') {
-    div.id = 'typing-indicator';
-    div.className = 'bubble ai typing';
-    div.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-  } else {
-    div.className = 'bubble ai';
-    div.textContent = text;
-  }
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function addUserMessage(text) {
-  const msgs = document.getElementById('chat-messages');
-  const div = document.createElement('div');
-  div.className = 'bubble me';
-  div.textContent = text;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function addChips(options, onSelect) {
-  const msgs = document.getElementById('chat-messages');
-  const row = document.createElement('div');
-  row.className = 'chips-row';
-  row.id = 'chips-' + Date.now();
-  options.forEach(opt => {
-    const chip = document.createElement('div');
-    chip.className = 'ai-chip';
-    chip.textContent = opt;
-    chip.onclick = () => {
-      row.remove();
-      onSelect(opt);
-    };
-    row.appendChild(chip);
-  });
-  msgs.appendChild(row);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function addListCTA() {
-  const msgs = document.getElementById('chat-messages');
-  const div = document.createElement('div');
-  div.className = 'chat-go';
-  div.innerHTML = `<div class="chat-go-title">리스트 보기</div><div class="chat-go-sub">조건 맞는 분들 찾았어요 · Tonight 활성</div>`;
-  div.onclick = () => goScreen('screen-list');
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-async function sendChat() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-
-  addUserMessage(text);
-  state.chatHistory.push({ role: 'user', content: text });
-
-  addAIMessage('__typing__');
-
-  try {
-    let response;
-
-    if (CLAUDE_API_KEY && CLAUDE_API_KEY !== 'YOUR_CLAUDE_API_KEY') {
-      // 실제 Claude API 호출
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': CLAUDE_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 300,
-          system: AI_SYSTEM,
-          messages: state.chatHistory
-        })
-      });
-      const data = await res.json();
-      response = data.content?.[0]?.text || '잠시 후 다시 시도해주세요';
-    } else {
-      // 데모 응답
-      response = getDemoAIResponse(text, state.chatHistory.length);
-    }
-
-    // Remove typing
-    const typing = document.getElementById('typing-indicator');
-    if (typing) typing.remove();
-
-    state.chatHistory.push({ role: 'assistant', content: response });
-
-    // Check if ready
-    if (response.includes('"ready": true') || response.includes('리스트 준비') || response.includes('찾았습니다')) {
-      const cleanMsg = response.replace(/\{.*\}/s, '').trim() || '반경 2.3km에 조건 맞는 분들 찾았어요 ✦';
-      addAIMessage(cleanMsg);
-      setTimeout(() => {
-        addListCTA();
-        loadMatches();
-      }, 500);
-    } else {
-      addAIMessage(response);
-
-      // Suggest chips based on message
-      if (response.includes('분위기') || response.includes('스타일')) {
-        setTimeout(() => addChips(['조용한 저녁', '활동적인', '편안한 대화'], (sel) => {
-          addUserMessage(sel);
-          state.chatHistory.push({ role: 'user', content: sel });
-          handleChipSelect(sel);
-        }), 300);
-      }
-    }
-  } catch(e) {
-    const typing = document.getElementById('typing-indicator');
-    if (typing) typing.remove();
-    addAIMessage('일시적인 오류가 있어요. 잠시 후 다시 시도해주세요.');
-  }
-}
-
-function handleChipSelect(sel) {
-  addAIMessage('알겠어요. 조건에 맞는 분들 찾아볼게요... ✦');
-  setTimeout(() => {
-    loadMatches();
-    addListCTA();
-  }, 1200);
-}
-
-function getDemoAIResponse(text, turnCount) {
-  if (turnCount <= 2) return '어떤 분위기를 선호하세요?';
-  if (turnCount <= 4) return '나이대는 어떻게 될까요?';
-  return '반경 2.3km에 조건 맞는 분들 찾았습니다 ✦ {"ready": true, "conditions": {"vibe": "조용한"}}';
-}
-
-// ============================================================
-// [11] 📋 Match List
-// ============================================================
-const DEMO_MATCHES = [
-  { id:'u1', nick:'J', age:'31세', dist:1.2, trustScore:94, available:'오늘 저녁 가능', gender:'f', color:'#6d28d9' },
-  { id:'u2', nick:'S', age:'29세', dist:1.8, trustScore:87, available:'밤 10시까지', gender:'f', color:'#0e7490' },
-  { id:'u3', nick:'Y', age:'33세', dist:2.3, trustScore:81, available:'오늘 자정까지', gender:'f', color:'#92400e' },
-];
-
-async function loadMatches() {
-  if (!firebaseReady) {
-    state.matches = DEMO_MATCHES;
-    document.getElementById('list-count-sub').textContent = `조건 맞는 ${DEMO_MATCHES.length}명`;
-    return;
-  }
-
-  try {
-    const snap = await db.collection('users')
-      .where('tonight', '==', true)
-      .where('gender', '!=', state.profile.gender)
-      .limit(20).get();
-
-    state.matches = snap.docs.map(d => {
-      const data = d.data();
-      const dist = state.location ?
-        haversine(state.location.lat, state.location.lng, data.lat||0, data.lng||0) : 0;
-      return { id: d.id, ...data, dist };
-    }).sort((a,b) => a.dist - b.dist);
-
-    if (state.matches.length === 0) state.matches = DEMO_MATCHES;
-  } catch(e) {
-    state.matches = DEMO_MATCHES;
-  }
-}
-
-function renderList() {
-  const list = document.getElementById('match-list');
-  const badge = document.getElementById('list-count-badge');
-
-  if (state.matches.length === 0) {
-    list.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">🔍</div>
-      <div class="empty-title">Tonight Mode를 켜면 리스트가 나와요</div>
-      <div class="empty-sub">오늘 밤 가능한 분들이 여기 나타납니다</div>
-    </div>`;
-    badge.textContent = '';
-    return;
-  }
-
-  badge.textContent = `${state.matches.length}명`;
-  list.innerHTML = state.matches.map((m, i) => `
-    <div class="person-card${i >= 3 ? ' locked' : ''}" onclick="${i < 3 ? `selectMatch(${i})` : `showCoinShop()`}">
-      <div class="pav pav-online" style="background:${m.color || getAvatarColor(m.nick)}">${m.nick[0]}</div>
-      <div>
-        <div class="pname">${m.nick}님</div>
-        <div class="pmeta">${m.age} · ${formatDist(m.dist)} · ${m.available}</div>
-      </div>
-      <div class="tscore">
-        <div class="ts-n">${m.trustScore}</div>
-        <div class="ts-l">Trust</div>
-      </div>
-    </div>
-  `).join('') + (state.matches.length >= 3 ? `
-    <div class="empty-state" style="padding:20px;opacity:.5">
-      <div style="font-size:12px;color:var(--t3)">더 보려면 코인 1C 필요</div>
-    </div>` : '');
-}
-
-function selectMatch(idx) {
-  state.selectedMatch = state.matches[idx];
-  const m = state.selectedMatch;
-  document.getElementById('sig-avatar').textContent = m.nick[0];
-  document.getElementById('sig-avatar').style.background = m.color || getAvatarColor(m.nick);
-  document.getElementById('sig-name').textContent = m.nick + '님';
-  document.getElementById('sig-meta').textContent = `Trust ${m.trustScore} · ${formatDist(m.dist)} · ${m.available}`;
-  document.getElementById('sig-tags').innerHTML =
-    `<div class="tag">응답 빠름</div><div class="tag">Proof ${m.momentCount || Math.floor(Math.random()*10)+1}회</div>`;
-  document.getElementById('sig-msg').value = '';
-  document.getElementById('sig-cnt').textContent = '0/20';
-  goScreen('screen-signal');
-}
-
-// ============================================================
-// [12] 📨 Signal System
-// ============================================================
-async function sendSignal() {
-  const msg = document.getElementById('sig-msg').value.trim();
-  if (!msg) { showToast('메시지를 입력해주세요'); return; }
-
-  const cost = 3;
-  if (state.coins < cost) {
-    showToast('코인이 부족합니다');
-    showCoinShop();
-    return;
-  }
-
-  showLoading(true);
-
-  const target = state.selectedMatch;
-  const signalData = {
-    fromUid: state.user?.uid || 'demo',
-    fromNick: state.profile?.nick || 'Unknown',
-    fromGender: state.profile?.gender || 'm',
-    toUid: target.id,
-    message: msg,
-    status: 'pending',
-    coinPledge: cost,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 12 * 3600 * 1000, // 12시간 후 만료
-  };
-
-  if (firebaseReady) {
-    try {
-      await db.collection('signals').add(signalData);
-      await db.collection('users').doc(state.user.uid).update({
-        coins: firebase.firestore.FieldValue.increment(-cost)
-      });
-    } catch(e) {
-      console.error(e);
-    }
-  }
-
-  // Deduct coins locally
-  state.coins -= cost;
-  if (state.profile) state.profile.coins = state.coins;
-  saveProfileLocal();
-  updateCoinsUI();
-
-  showLoading(false);
-  showToast(`Signal 전송 완료! ${cost}C 예치됨`);
-  setTimeout(() => goScreen('screen-home'), 1000);
-}
-
-// ============================================================
-// [13] 🛡️ Passport & Trust Score
-// ============================================================
-function getTrustTier(score) {
-  if (score >= 90) return { name: 'Diamond', color: '#93c5fd' };
-  if (score >= 75) return { name: 'Platinum', color: '#c084fc' };
-  if (score >= 55) return { name: 'Gold', color: '#fbbf24' };
-  if (score >= 30) return { name: 'Silver', color: '#94a3b8' };
-  return { name: 'Starter', color: '#6b7280' };
-}
-
-function calcTrustScore(profile) {
-  const responseScore = (profile.responseRate || 100) * 0.25;
-  const noShowScore = (profile.noShowRate || 100) * 0.25;
-  const momentScore = Math.min((profile.momentCount || 0) * 8, 25);
-  const reportPenalty = (profile.reportCount || 0) * 10;
-  return Math.max(0, Math.min(100, Math.round(responseScore + noShowScore + momentScore - reportPenalty)));
-}
-
-function renderPassport() {
-  const p = state.profile;
-  if (!p) return;
-
-  const score = calcTrustScore(p);
-  const tier = getTrustTier(score);
-
-  document.getElementById('pp-score').textContent = score;
-  document.getElementById('pp-tier').textContent = `◈ ${tier.name}`;
-  document.getElementById('pp-tier').style.color = tier.color;
-  document.getElementById('pp-resp').textContent = (p.responseRate || 100) + '%';
-  document.getElementById('pp-proof').textContent = (p.momentCount || 0) + '회';
-  document.getElementById('pp-pledge').textContent = '★'.repeat(Math.min(5, Math.floor((p.noShowRate || 100) / 20)));
-  document.getElementById('pp-report').textContent = (p.reportCount || 0) + '건';
-  document.getElementById('pp-points').textContent = ((p.momentCount || 0) * 180).toLocaleString();
-
-  // Proof list
-  const proofList = document.getElementById('proof-list');
-  const proofs = JSON.parse(localStorage.getItem('uria_proofs') || '[]');
-  if (proofs.length === 0) {
-    proofList.innerHTML = `<div class="empty-state" style="padding:30px"><div class="empty-icon">✦</div><div class="empty-title">아직 Proof가 없어요</div><div class="empty-sub">첫 만남을 인증하면 Trust Score가 시작됩니다</div></div>`;
-  } else {
-    proofList.innerHTML = proofs.map(pr => `
-      <div class="proof-row">
-        <div class="pr-l">✓ 인증 완료 #${pr.num} · ${pr.venue}</div>
-        <div class="pr-r">${pr.date}</div>
-      </div>
-    `).join('');
-  }
-}
-
-// ============================================================
-// [14] 🏆 Reputation (Male)
-// ============================================================
-const LEVELS = [
-  { name: 'Bronze', min: 0, max: 40, perks: '기본 AI 추천 · 표준 노출' },
-  { name: 'Silver', min: 40, max: 100, perks: 'Trust 70+ 우선 추천\nSignal Market 노출 +20%\nDrift Coupon 월 2회' },
-  { name: 'Gold', min: 100, max: 160, perks: 'Trust 85+ 우선 추천\nShield 배지 표시\nAI 매칭 월 1회 무료' },
-  { name: 'Platinum', min: 160, max: 999, perks: 'Trust 95+ 독점 추천\n코인 충전 10% 보너스\nTRUST API 파트너 배지' },
-];
-
-function calcRepScore(profile) {
-  const noShow = (profile.noShowRate || 100) * 0.25;
-  const moment = Math.min((profile.momentCount || 0) * 10, 35);
-  const quality = 20; // default
-  const clean = (profile.reportCount || 0) === 0 ? 25 : 0;
-  return Math.round(noShow + moment + quality + clean);
-}
-
-function renderReputation() {
-  const p = state.profile;
-  if (!p) return;
-
-  const score = calcRepScore(p);
-  const level = LEVELS.find(l => score >= l.min && score < l.max) || LEVELS[0];
-  const nextLevel = LEVELS[LEVELS.indexOf(level) + 1];
-  const prog = nextLevel ? ((score - level.min) / (nextLevel.min - level.min)) * 100 : 100;
-
-  document.getElementById('rep-score').textContent = score;
-  document.getElementById('rep-level').textContent = level.name;
-  document.getElementById('rep-prog').style.width = prog + '%';
-  document.getElementById('rep-note').textContent = nextLevel
-    ? `${nextLevel.name}까지 ${nextLevel.min - score}점`
-    : 'MAX 레벨';
-
-  // Bars
-  document.getElementById('b1').style.width = (p.noShowRate || 100) + '%';
-  document.getElementById('b2').style.width = Math.min((p.momentCount || 0) * 10, 100) + '%';
-  document.getElementById('b3').style.width = '70%';
-  document.getElementById('b4').style.width = (p.reportCount || 0) === 0 ? '100%' : '0%';
-
-  // Level list
-  document.getElementById('lv-list').innerHTML = LEVELS.map((l, i) => {
-    const isCur = score >= l.min && score < l.max;
-    return `<div class="lv-card${isCur ? ' cur' : ''}">
-      ${isCur ? '<div class="lv-tag">현재</div>' : ''}
-      <div class="lv-name">${l.name}</div>
-      <div class="lv-range">${l.min} – ${l.max === 999 ? '∞' : l.max}점</div>
-      <div class="lv-perks" style="color:${isCur ? 'var(--t2)' : 'var(--t3)'}">${l.perks.replace(/\n/g,'<br>')}</div>
-      ${isCur && nextLevel ? `<div style="margin-top:10px;background:var(--s2);border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:var(--t3);margin-bottom:4px">${nextLevel.name}까지</div><div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div><div style="font-size:10px;color:var(--t3);margin-top:4px">Moment ${Math.ceil((nextLevel.min - score) / 10)}회 더</div></div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-// ============================================================
-// [15] 📊 Market
-// ============================================================
-function renderMarket() {
-  updateMarketCounts();
-}
-
-function updateMarketCounts() {
-  const h = new Date().getHours();
-  const isTonightHour = h >= TONIGHT_START && h < TONIGHT_END;
-  const fCount = isTonightHour ? Math.floor(Math.random()*4)+1 : 0;
-  const mCount = isTonightHour ? Math.floor(Math.random()*8)+3 : 0;
-
-  document.getElementById('mkt-f').textContent = fCount;
-  document.getElementById('mkt-m').textContent = mCount;
-
-  const msgEl = document.getElementById('mkt-msg');
-  if (fCount > 0 && mCount > 0) {
-    if (fCount < mCount) {
-      msgEl.textContent = `경쟁 높음 — 여성 ${fCount}명, 남성 ${mCount}명. 지금 Signal 보내세요!`;
-    } else {
-      msgEl.textContent = `여성이 더 많아요 — 지금이 Signal 보내기 좋은 타이밍!`;
-    }
-  } else {
-    msgEl.textContent = 'Tonight Mode를 켜면 매칭이 시작됩니다';
-  }
-
-  document.getElementById('venue1-cnt').textContent = Math.floor(Math.random()*10)+2;
-  document.getElementById('venue2-cnt').textContent = Math.floor(Math.random()*15)+5;
-}
-
-// ============================================================
-// [16] ✦ Moment Certification
-// ============================================================
-async function completeMoment() {
-  showLoading(true);
-  await sleep(1200);
-  showLoading(false);
-
-  // Save proof
-  const proofs = JSON.parse(localStorage.getItem('uria_proofs') || '[]');
-  const venues = ['Café Nuit', 'Bar Velvet', 'Lounge Green'];
-  proofs.unshift({
-    num: (state.profile?.momentCount || 0) + 1,
-    venue: venues[Math.floor(Math.random()*venues.length)],
-    date: getRelativeDate(0)
-  });
-  localStorage.setItem('uria_proofs', JSON.stringify(proofs.slice(0, 20)));
-
-  // Update profile
-  if (state.profile) {
-    state.profile.momentCount = (state.profile.momentCount || 0) + 1;
-    state.profile.trustScore = calcTrustScore(state.profile);
-    saveProfileLocal();
-  }
-
-  if (firebaseReady && state.user) {
-    db.collection('users').doc(state.user.uid).update({
-      momentCount: firebase.firestore.FieldValue.increment(1),
-      trustScore: state.profile.trustScore
-    });
-  }
-
-  showToast('Moment 인증 완료! +180P 적립됨 🎉');
-  setTimeout(() => goBack(), 1000);
-}
-
-// ============================================================
-// [17] ⚙️ Settings
-// ============================================================
-function renderSettings() {
-  const p = state.profile;
-  if (!p) return;
-
-  const av = document.getElementById('settings-av');
-  if (p.photo) {
-    av.innerHTML = `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-  } else {
-    av.textContent = (p.nick || '?')[0].toUpperCase();
-    av.style.background = getAvatarColor(p.nick || '?');
-  }
-
-  document.getElementById('settings-name').textContent = p.nick || '—';
-  document.getElementById('settings-sub').textContent = `${p.gender === 'f' ? '여성' : '남성'} · ${p.age || '—'}`;
-  document.getElementById('settings-coins').textContent = `현재 ${state.coins}C`;
-}
-
-async function signOut() {
-  if (confirm('로그아웃 하시겠습니까?')) {
-    if (firebaseReady) await auth.signOut();
-    localStorage.removeItem('uria_demo_profile');
-    state.user = null;
-    state.profile = null;
-    state.tonight = false;
-    document.getElementById('nav').style.display = 'none';
-    goScreen('screen-splash');
-    showToast('로그아웃됐습니다');
-  }
-}
-
-// ============================================================
-// [18] 🪙 Coin System
-// ============================================================
-function showCoinShop() {
-  document.getElementById('coin-modal').classList.add('show');
-}
-
-function closeCoinModal(e) {
-  if (!e || e.target === document.getElementById('coin-modal')) {
-    document.getElementById('coin-modal').classList.remove('show');
-  }
-}
-
-function buyCoin(amount, price) {
-  // 실제 결제: 아임포트(iamport) 연동 필요
-  // 지금은 데모로 바로 추가
-  const formatted = price.toLocaleString();
-  if (confirm(`${amount}코인 — ₩${formatted}\n(데모: 결제 없이 추가됩니다)`)) {
-    state.coins += amount;
-    if (state.profile) state.profile.coins = state.coins;
-    saveProfileLocal();
-    updateCoinsUI();
-    closeCoinModal();
-    showToast(`🪙 ${amount}코인 충전 완료!`);
-  }
-}
-
-function updateCoinsUI() {
-  const el = document.getElementById('home-coins');
-  if (el) el.textContent = state.coins + 'C';
-  const sel = document.getElementById('settings-coins');
-  if (sel) sel.textContent = `현재 ${state.coins}C`;
-}
-
-// ============================================================
-// [19] 🕐 Clock & Timers
-// ============================================================
-function startClock() {
-  const tick = () => {
-    const now = new Date();
-    const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-    const el = document.getElementById('home-clk');
-    if (el) el.textContent = t;
-  };
-  tick();
-  setInterval(tick, 10000);
-}
-
-function startMarketTimer() {
-  // Tonight window timer
-  const updateTimer = () => {
-    const now = new Date();
-    const h = now.getHours();
-    const m = now.getMinutes();
-
-    if (h >= TONIGHT_START && h < TONIGHT_END) {
-      const remaining = (TONIGHT_END - h - 1) * 60 + (60 - m);
-      const hh = Math.floor(remaining / 60).toString().padStart(2,'0');
-      const mm = (remaining % 60).toString().padStart(2,'0');
-      const timeStr = hh + ':' + mm;
-      const el = document.getElementById('market-timer');
-      const mt = document.getElementById('mkt-timer');
-      if (el) el.textContent = timeStr;
-      if (mt) mt.textContent = timeStr;
-    } else {
-      const el = document.getElementById('market-timer');
-      const mt = document.getElementById('mkt-timer');
-      const timeUntil = h < TONIGHT_START ? (TONIGHT_START - h) + '시간 후' : '내일 6PM';
-      if (el) el.textContent = timeUntil;
-      if (mt) mt.textContent = timeUntil;
-    }
-  };
-  updateTimer();
-  setInterval(updateTimer, 30000);
-}
-
-// ============================================================
-// [20] 🛠️ Utils
-// ============================================================
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
-}
-
-function showLoading(show) {
-  document.getElementById('loading').style.display = show ? 'flex' : 'none';
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function getAvatarColor(name) {
-  const colors = ['#6d28d9','#0e7490','#92400e','#065f46','#7c2d12','#1e3a8a','#5b21b6'];
-  if (!name) return colors[0];
-  return colors[name.charCodeAt(0) % colors.length];
-}
-
-function formatDist(km) {
-  if (!km && km !== 0) return '—';
-  return km < 1 ? Math.round(km * 1000) + 'm' : km.toFixed(1) + 'km';
-}
-
-function getRelativeDate(daysAgo) {
-  if (daysAgo === 0) return '오늘';
-  if (daysAgo === 1) return '1일 전';
-  return `${daysAgo}일 전`;
-}
-
-function saveProfileLocal() {
-  if (state.profile) {
-    localStorage.setItem('uria_demo_profile', JSON.stringify(state.profile));
-  }
-}
-
-function loadDemoData() {
-  // Load incoming signals for female users
-  if (state.profile?.gender === 'f') {
-    state.incomingSignals = [
-      { nick: 'K', age: '32세', dist: 1.4, repLevel: 'Silver', message: '오늘 저녁 어떠세요?', meta: 'Reputation Silver · 1.4km' },
-    ];
-  }
-
-  // Load matches
-  state.matches = DEMO_MATCHES;
-}
-
-// ============================================================
-// [21] 🚀 APP INIT
-// ============================================================
-(function init() {
-  initFirebase();
-
-  // Auth state change
-  if (firebaseReady) {
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        state.user = user;
-        await checkProfile();
-      }
-    });
-  }
-
-  // PWA install prompt
-  let deferredPrompt;
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-
-  console.log('🚀 URIA');
-})();
-</script>
+<script src="./config.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
