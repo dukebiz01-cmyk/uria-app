@@ -108,7 +108,7 @@ export async function bulkExpire(beforeDate) {
   const { rows } = await query(
     `UPDATE signals 
      SET status = 'expired', responded_at = NOW()
-     WHERE status = 'pending' AND expires_at < $1
+     WHERE status IN ('pending','held') AND expires_at < $1
      RETURNING id, sender_id`,
     [beforeDate],
   );

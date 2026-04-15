@@ -93,7 +93,7 @@ export async function processSignalAccept(senderId, signalId, client) {
     `INSERT INTO wallet_ledger
        (user_id, asset_type, entry_type, amount, balance_after,
         ref_type, ref_id, idempotency_key)
-     SELECT $1,'coin','escrow_accept_marked',0,coin_balance,'signal',$2,$3
+     SELECT $1,'coin','charge',0,coin_balance,'signal',$2,$3
      FROM wallets WHERE user_id=$1
      ON CONFLICT (idempotency_key) DO NOTHING`,
     [senderId, signalId, `accept_mark:${signalId}:${senderId}`],

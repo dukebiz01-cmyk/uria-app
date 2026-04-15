@@ -43,7 +43,12 @@ export async function getPassport(userId) {
       gender: user.gender,
       selfie_verified: user.selfie_verified,
     },
-    passport,
+    passport: {
+      ...passport,
+      score: passport.trust_score,
+      moment_count: passport.moment_verified_count,
+      report_count: passport.valid_report_count,
+    },
   };
 }
 

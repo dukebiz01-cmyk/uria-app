@@ -101,7 +101,7 @@ export async function bulkExpireCheckedIn(beforeDate) {
     `UPDATE moments 
      SET status = 'expired'
      WHERE status IN ('pending', 'checked_in') AND created_at < $1
-     RETURNING id, male_id, female_id`,
+     RETURNING id, signal_id, male_id, female_id`,
     [beforeDate],
   );
   return rows;

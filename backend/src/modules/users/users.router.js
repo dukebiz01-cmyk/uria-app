@@ -1,88 +1,77 @@
-import express from 'express';
+import { Router } from 'express';
+import { z } from 'zod';
 import * as usersService from './users.service.js';
 import { authenticate } from '../../middleware/auth.js';
-import { validate } from '../../middleware/validate.js';
-import { body } from 'express-validator';
-import { query } from '../../config/db.js';
+import { validate, validateBody, validateParams } from '../../middleware/validate.js';
+import { updateProfileSchema, updateLocationSchema, userListQuerySchema, userIdParamSchema } from './users.schema.js';
+import { apiRateLimiter } from '../../middleware/rateLimiter.js';
+import asyncHandler from '../../utils/asyncHandler.js';
 
-const router = express.Router();
+const router = Router();
+router.use(authenticate);
+router.use(apiRateLimiter);
 
-// 프로필 조회
-router.get('/me', authenticate, async (req, res, next) => {
-  try {
-    const user = await usersService.getMe(req.user.id);
-    res.json({ data: user });
-  } catch (e) { next(e); }
-});
+const tonightSchema = z.object({ active: z.boolean() });
+const selfieSchema = z.object({ selfie_photo_url: z.string().url() });
+const pushTokenSchema = z.object({ token: z.string().min(1), platform: z.enum(['android', 'ios', 'web']), app_version: z.string().optional() });
+const reportAliasSchema = z.object({ reason: z.string().min(1), details: z.string().max(500).optional() });
 
-// 프로필 수정
-router.patch('/me', authenticate,
-  validate([
-    body('nickname').optional().isLength({ min: 1, max: 20 }),
-    body('bio').optional().isLength({ max: 300 }),
-  ]),
-  async (req, res, next) => {
-    try {
-      const user = await usersService.updateMe(req.user.id, req.body);
-      res.json({ data: user });
-    } catch (e) { next(e); }
-  },
-);
+router.get('/me', asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.getMe(req.user.id) });
+}));
 
-// Tonight Mode 토글
-router.post('/me/tonight', authenticate,
-  validate([body('active').isBoolean()]),
-  async (req, res, next) => {
-    try {
-      const result = await usersService.toggleTonightMode(req.user.id, req.body);
-      res.json({ data: result });
-    } catch (e) { next(e); }
-  },
-);
+router.patch('/me', validateBody(updateProfileSchema), asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.updateProfile(req.user.id, req.body) });
+}));
 
-// 셀피 인증 요청
-router.post('/me/selfie', authenticate,
-  validate([body('selfie_photo_url').isURL()]),
-  async (req, res, next) => {
-    try {
-      await usersService.requestSelfieVerification(req.user.id, req.body.selfie_photo_url);
-      res.json({ data: { status: 'pending_review' } });
-    } catch (e) { next(e); }
-  },
-);
+router.patch('/me/location', validateBody(updateLocationSchema), asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.updateLocation(req.user.id, req.body) });
+}));
 
-// ✅ BUG2 수정: push token 등록 (raw token)
-router.post('/me/push-token', authenticate,
-  validate([
-    body('token').isString().notEmpty(),
-    body('platform').isIn(['android', 'ios', 'web']),
-  ]),
-  async (req, res, next) => {
-    try {
-      const { token, platform, app_version } = req.body;
-      await query(
-        `INSERT INTO push_tokens (user_id, raw_token, platform, app_version)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (user_id, raw_token) DO UPDATE
-         SET updated_at = NOW(), app_version = EXCLUDED.app_version`,
-        [req.user.id, token, platform, app_version || null],
-      );
-      res.json({ data: { registered: true } });
-    } catch (e) { next(e); }
-  },
-);
+router.post('/me/tonight', validateBody(tonightSchema), asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.toggleTonightMode(req.user.id, req.body) });
+}));
+router.post('/me/tonight-mode', validateBody(tonightSchema), asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.toggleTonightMode(req.user.id, req.body) });
+}));
 
-// 주변 유저 리스트 (Tonight Mode 활성 유저)
-router.get('/nearby', authenticate, async (req, res, next) => {
-  try {
-    const { lat, lng, radius_km = 5, page = 1, page_size = 20 } = req.query;
-    const users = await usersService.getNearbyUsers(req.user.id, {
-      lat: parseFloat(lat), lng: parseFloat(lng),
-      radius_km: parseFloat(radius_km),
-      page: parseInt(page), page_size: parseInt(page_size),
-    });
-    res.json({ data: users });
-  } catch (e) { next(e); }
-});
+router.post('/me/selfie', validateBody(selfieSchema), asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.requestSelfieVerification(req.user.id, req.body.selfie_photo_url) });
+}));
+
+router.post('/me/push-token', validateBody(pushTokenSchema), asyncHandler(async (req, res) => {
+  const { token, platform, app_version } = req.body;
+  const { query } = await import('../../config/db.js');
+  await query(
+    `INSERT INTO push_tokens (user_id, raw_token, platform, app_version)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (user_id, raw_token) DO UPDATE SET updated_at = NOW(), app_version = EXCLUDED.app_version`,
+    [req.user.id, token, platform, app_version || null],
+  );
+  res.json({ data: { registered: true } });
+}));
+
+router.get('/nearby', validate({ query: userListQuerySchema }), asyncHandler(async (req, res) => {
+  const params = {
+    lat: req.query.lat !== undefined ? Number(req.query.lat) : undefined,
+    lng: req.query.lng !== undefined ? Number(req.query.lng) : undefined,
+    radius_km: Number(req.query.radius_km),
+    cursor: req.query.cursor,
+    limit: Number(req.query.limit),
+  };
+  res.json({ data: await usersService.listUsers(req.user.id, params) });
+}));
+
+router.get('/:id', validateParams(userIdParamSchema), asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.getUser(req.user.id, req.params.id) });
+}));
+
+router.post('/:id/block', validateParams(userIdParamSchema), asyncHandler(async (req, res) => {
+  res.json({ data: await usersService.blockUser(req.user.id, req.params.id) });
+}));
+
+router.post('/:id/report', validateParams(userIdParamSchema), validateBody(reportAliasSchema), asyncHandler(async (req, res) => {
+  res.status(201).json({ data: await usersService.reportUser(req.user.id, req.params.id, req.body) });
+}));
 
 export default router;

@@ -1,15 +1,23 @@
 import cron from 'node-cron';
 import { bulkExpireCheckedIn } from '../modules/moments/moments.repository.js';
+import { processMomentComplete } from '../services/wallet.service.js';
+import { withTransaction } from '../config/db.js';
+import { query } from '../config/db.js';
 import config from '../config/index.js';
 import logger from '../utils/logger.js';
 
 /**
  * Moment Expiry Job
  * Runs every minute.
- * Expires moments that have passed their check-in window (30 minutes default).
+ * Expires moments past the check-in window (default 30 min).
  *
- * Moments in 'pending' or 'checked_in' status that are older than
- * MOMENT_CHECKIN_WINDOW_MINUTES are expired.
+ * SAFE BET v3 (FIX #29):
+ *   - Signal escrow: -3C (sender)
+ *   - Signal accept: 0C
+ *   - Moment verified: +1C refund (net cost 2C)
+ *   - Moment expired: +1C refund still given (no-show penalty handled via reputation)
+ *     → 정책 일관성: signal accepted 후 moment 단계에서 +1C 환불 보장
+ *     → no-show는 reputation_score 하락으로 처벌 (별도 메커니즘)
  */
 export function startMomentExpiryJob() {
   const task = cron.schedule('* * * * *', async () => {
@@ -18,7 +26,6 @@ export function startMomentExpiryJob() {
       const cutoff = new Date(Date.now() - windowMinutes * 60 * 1000);
 
       const expired = await bulkExpireCheckedIn(cutoff);
-
       if (!expired.length) return;
 
       logger.info(
@@ -26,11 +33,37 @@ export function startMomentExpiryJob() {
         'Moment expiry job: expired moments',
       );
 
-      // Note: For expired moments, no coin refund logic is triggered here
-      // because escrow was already held on signal send.
-      // The full escrow refund happens when the signal expires, not the moment.
-      // If moment expires but signal was already 'accepted', the 1-coin charge stays.
-      // This is by design: the acceptance fee (1 coin) is non-refundable.
+      // FIX #29: signal sender에게 +1C 환불 (moment 완료 시와 동일 처리)
+      const results = await Promise.allSettled(
+        expired.map(async (moment) => {
+          // signals 테이블에서 sender_id 가져오기
+          const { rows: sigRows } = await query(
+            'SELECT sender_id FROM signals WHERE id = $1',
+            [moment.signal_id],
+          );
+          if (!sigRows.length) return;
+          const senderId = sigRows[0].sender_id;
+          await withTransaction(async (client) => {
+            await processMomentComplete(senderId, moment.signal_id, moment.id, client);
+          }).catch((err) => {
+            if (err.code === '23505') return; // 이미 환불됨 (idempotency)
+            throw err;
+          });
+        }),
+      );
+
+      const failures = results.filter((r) => r.status === 'rejected');
+      if (failures.length) {
+        logger.error(
+          { failures: failures.map((f) => f.reason?.message) },
+          'Moment expiry job: some refunds failed',
+        );
+      }
+
+      logger.info(
+        { total: expired.length, refunded: expired.length - failures.length },
+        'Moment expiry job complete',
+      );
     } catch (err) {
       logger.error({ err }, 'Moment expiry job: unhandled error');
     }

@@ -52,8 +52,8 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// Start server
-server.listen(config.PORT, () => {
+// Start server (0.0.0.0 binding required for Render/Docker)
+server.listen(config.PORT, '0.0.0.0', () => {
   logger.info(
     { port: config.PORT, env: config.NODE_ENV },
     `URIA Backend listening on port ${config.PORT}`,

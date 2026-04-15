@@ -8,73 +8,33 @@ import * as coinsService from './coins.service.js';
 
 const router = Router();
 
-const purchaseSchema = z.object({
-  imp_uid: z.string().min(1),
-  merchant_uid: z.string().min(1),
-  amount: z.number().positive(),
-});
+const purchaseSchema = z.object({ imp_uid: z.string().min(1), merchant_uid: z.string().min(1), amount: z.number().positive() });
+const ledgerQuerySchema = z.object({ cursor: z.string().optional(), limit: z.coerce.number().min(1).max(50).default(20) });
 
-const ledgerQuerySchema = z.object({
-  cursor: z.string().optional(),
-  limit: z.coerce.number().min(1).max(50).default(20),
-});
+router.get('/packages', authenticate, apiRateLimiter, asyncHandler(async (req, res) => {
+  res.json({ data: coinsService.getPackages() });
+}));
 
-/**
- * GET /api/coins/balance
- */
-router.get(
-  '/balance',
-  authenticate,
-  apiRateLimiter,
-  asyncHandler(async (req, res) => {
-    const balance = await coinsService.getWalletBalance(req.user.id);
-    res.json(balance);
-  }),
-);
+router.get('/balance', authenticate, apiRateLimiter, asyncHandler(async (req, res) => {
+  const balance = await coinsService.getWalletBalance(req.user.id);
+  res.json({ data: { ...balance, balance: balance.coin_balance } });
+}));
 
-/**
- * GET /api/coins/ledger
- */
-router.get(
-  '/ledger',
-  authenticate,
-  apiRateLimiter,
-  validate({ query: ledgerQuerySchema }),
-  asyncHandler(async (req, res) => {
-    const result = await coinsService.getLedger(req.user.id, req.query);
-    res.json(result);
-  }),
-);
+router.get('/ledger', authenticate, apiRateLimiter, validate({ query: ledgerQuerySchema }), asyncHandler(async (req, res) => {
+  res.json({ data: await coinsService.getLedger(req.user.id, req.query) });
+}));
+router.get('/transactions', authenticate, apiRateLimiter, validate({ query: ledgerQuerySchema }), asyncHandler(async (req, res) => {
+  res.json({ data: await coinsService.getLedger(req.user.id, req.query) });
+}));
 
-/**
- * POST /api/coins/purchase
- * Verify PortOne payment and credit coins
- */
-router.post(
-  '/purchase',
-  authenticate,
-  apiRateLimiter,
-  validateBody(purchaseSchema),
-  asyncHandler(async (req, res) => {
-    const result = await coinsService.purchaseCoins(req.user.id, req.body);
-    res.status(201).json(result);
-  }),
-);
+router.post('/purchase', authenticate, apiRateLimiter, validateBody(purchaseSchema), asyncHandler(async (req, res) => {
+  res.status(201).json({ data: await coinsService.purchaseCoins(req.user.id, req.body) });
+}));
 
-/**
- * POST /api/coins/webhook
- * PortOne payment webhook (no auth — signature verified internally)
- * NOTE: This route must have raw body access (configured in app.js)
- */
-router.post(
-  '/webhook',
-  asyncHandler(async (req, res) => {
-    const signature = req.headers['x-portone-signature'] || req.headers['x-imp-webhookkey'];
-    const rawBody = req.rawBody || JSON.stringify(req.body);
-
-    const result = await coinsService.handleWebhook(rawBody, signature, req.body);
-    res.json({ ok: true, ...result });
-  }),
-);
+router.post('/webhook', asyncHandler(async (req, res) => {
+  const signature = req.headers['x-portone-signature'] || req.headers['x-imp-webhookkey'];
+  const rawBody = req.rawBody || JSON.stringify(req.body);
+  res.json({ ok: true, ...(await coinsService.handleWebhook(rawBody, signature, req.body)) });
+}));
 
 export default router;

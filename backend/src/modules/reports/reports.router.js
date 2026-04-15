@@ -7,7 +7,6 @@ import asyncHandler from '../../utils/asyncHandler.js';
 import * as reportsService from './reports.service.js';
 
 const router = Router();
-
 router.use(authenticate);
 router.use(apiRateLimiter);
 
@@ -17,17 +16,8 @@ const reportSchema = z.object({
   description: z.string().max(500).optional(),
 });
 
-/**
- * POST /api/reports
- * Submit a report against another user
- */
-router.post(
-  '/',
-  validateBody(reportSchema),
-  asyncHandler(async (req, res) => {
-    const report = await reportsService.submitReport(req.user.id, req.body);
-    res.status(201).json({ report });
-  }),
-);
+router.post('/', validateBody(reportSchema), asyncHandler(async (req, res) => {
+  res.status(201).json({ data: await reportsService.submitReport(req.user.id, req.body) });
+}));
 
 export default router;

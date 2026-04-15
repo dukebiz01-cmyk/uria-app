@@ -6,6 +6,7 @@ const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
+  ssl: config.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   min: config.DB_POOL_MIN,
   max: config.DB_POOL_MAX,
   idleTimeoutMillis: 30000,

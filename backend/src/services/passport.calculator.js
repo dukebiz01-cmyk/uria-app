@@ -150,9 +150,9 @@ async function calculateProfileScore(userId) {
   const { rows } = await query(
     `SELECT 
       selfie_verified,
-      profile_photo_url IS NOT NULL AS has_photo,
-      bio IS NOT NULL AND length(bio) > 20 AS has_bio,
-      nickname IS NOT NULL AS has_nickname
+      (profile_photo_url IS NOT NULL) AS has_photo,
+      (bio IS NOT NULL AND length(bio) > 20) AS has_bio,
+      (nickname IS NOT NULL) AS has_nickname
      FROM users WHERE id = $1`,
     [userId],
   );
