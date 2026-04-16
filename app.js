@@ -1,9 +1,11 @@
 /**
- * URIA App — app.js v4 (보완본)
- * XSS 방어 | SAFE BET 2C | °C 온도 | 실시간 타이머 | GPS 거리 | 데모/라이브
- * Fix: 스플래시 타이핑, OTP화면, saveProfile, photo upload, showCoinShop alias,
- *      Market 캐시, Signal History, goScreen NAV_MAP, chat-box→chat-messages,
- *      incoming-list, home-coins, settings-sub, mkt-msg, sentSignals 저장, LS 래퍼
+ * URIA App — app.js v4 (back navigation + nav labels fixed)
+ * Fix:
+ * - 모바일 뒤로가기(popstate) 복구
+ * - 모달 열린 상태에서 뒤로가기 시 앱 죽는 현상 방지
+ * - screen 전환시 history 상태 저장
+ * - 초기 replaceState 처리
+ * - 하단 메뉴 라벨 강제 적용: Home / AI / Live / °C / Me
  */
 'use strict';
 
@@ -15,12 +17,11 @@ const LS = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   remove(k) { try { localStorage.removeItem(k); } catch {} },
-  del(k) { try { localStorage.removeItem(k); } catch {} },  // alias for config.js
+  del(k) { try { localStorage.removeItem(k); } catch {} },
   clear() { try { localStorage.clear(); } catch {} },
   getJSON(k, def = null) { try { return JSON.parse(this.get(k) || 'null') ?? def; } catch { return def; } },
   setJSON(k, v) { this.set(k, JSON.stringify(v)); },
 };
-// FIX #22: bridge config.js window._LS to LS so tokens persist
 if (typeof window !== 'undefined') window._LS = LS;
 
 // ── 유틸 ────────────────────────────────────────────
@@ -49,6 +50,34 @@ const state = {
   location:null, devMode:false,
 };
 
+// ── 네비게이션 상태 ─────────────────────────────────
+const ROOT_SCREEN = 'screen-home';
+let _handlingPopState = false;
+
+function getActiveScreenId() {
+  return document.querySelector('.screen.active')?.id || null;
+}
+function isCoinModalOpen() {
+  return document.getElementById('coin-modal')?.classList.contains('show');
+}
+function buildHistoryState(screenId, extra = {}) {
+  return {
+    screen: screenId,
+    modal: isCoinModalOpen() ? 'coin' : null,
+    ...extra,
+  };
+}
+function replaceHistory(screenId, extra = {}) {
+  try {
+    history.replaceState(buildHistoryState(screenId, extra), '', location.href);
+  } catch {}
+}
+function pushHistory(screenId, extra = {}) {
+  try {
+    history.pushState(buildHistoryState(screenId, extra), '', location.href);
+  } catch {}
+}
+
 // ── 데모 데이터 ──────────────────────────────────────
 const DEMO_MATCHES = [
   { id:'u1',nick:'J',age:'31세',dist:1.2,trustScore:94,available:'오늘 저녁 가능',color:'#6d28d9' },
@@ -63,14 +92,16 @@ const DEMO_SIGNALS = [
 // ── 초기화 ──────────────────────────────────────────
 async function initApp() {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
-  startClock(); startMarketTimer();
-  // 로컬 프로필 로드
+  startClock();
+  startMarketTimer();
+  bindHistoryEvents();
+
   const saved = loadProfileLocal();
   if (saved) {
     state.profile = saved;
     state.coins = saved.coins || 0;
     loadSentSignals();
-    // FIX #30: 라이브 모드에서 토큰 검증 (만료 시 로그인 화면으로)
+
     if (URIA_CONFIG.MODE === 'live') {
       try {
         const me = await API.getMe();
@@ -83,21 +114,53 @@ async function initApp() {
         console.warn('토큰 만료, 재로그인 필요');
         API.clearToken();
         LS.remove('uria_profile');
-        // fall through to splash
       }
     } else {
       enterApp();
       return;
     }
   }
-  // 스플래시 타이핑 시작 후 화면 표시
-  goScreen('screen-splash');
+
+  goScreen('screen-splash', { replace:true });
   startSplashTyping();
+}
+
+function bindHistoryEvents() {
+  window.addEventListener('popstate', (event) => {
+    if (_handlingPopState) return;
+    _handlingPopState = true;
+    try {
+      const hs = event.state || {};
+
+      if (isCoinModalOpen() && hs.modal !== 'coin') {
+        document.getElementById('coin-modal')?.classList.remove('show');
+        _handlingPopState = false;
+        return;
+      }
+
+      if (hs.modal === 'coin') {
+        const baseScreen = hs.screen || getActiveScreenId() || ROOT_SCREEN;
+        goScreen(baseScreen, { replace:true, noHistory:true });
+        document.getElementById('coin-modal')?.classList.add('show');
+        _handlingPopState = false;
+        return;
+      }
+
+      const target = hs.screen || ROOT_SCREEN;
+      goScreen(target, { replace:true, noHistory:true });
+    } catch (err) {
+      console.error('popstate error:', err);
+      goScreen(ROOT_SCREEN, { replace:true, noHistory:true });
+    } finally {
+      _handlingPopState = false;
+    }
+  });
 }
 
 function enterApp() {
   document.getElementById('nav').style.display='flex';
-  goScreen('screen-home');
+  applyNavLabels();
+  goScreen('screen-home', { replace:true });
   renderHome();
   getLocation();
 }
@@ -122,20 +185,16 @@ async function startSplashTyping() {
   let pi = 0;
   while (_splashTypingActive) {
     const phrase = SPLASH_PHRASES[pi % SPLASH_PHRASES.length];
-    // 타이핑
     for (let i = 0; i <= phrase.length; i++) {
       if (!_splashTypingActive) return;
       typed.textContent = phrase.slice(0, i);
       await sleep(65);
     }
-    // 첫 문장 완성 시 버튼 fade-in
     if (!firstDone) {
       firstDone = true;
-      if (btns) { btns.style.opacity = '1'; }
+      if (btns) btns.style.opacity = '1';
     }
-    // 완성 후 대기
     await sleep(2000);
-    // 지우기
     for (let i = phrase.length; i >= 0; i--) {
       if (!_splashTypingActive) return;
       typed.textContent = phrase.slice(0, i);
@@ -160,14 +219,57 @@ const NAV_MAP = {
   'screen-sig-history': 'n-settings',
 };
 
-function goScreen(id) {
-  // screen-onboarding → screen-setup redirect
+function applyNavLabels(){
+  const byId = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+
+  byId('n-home-lbl', 'Home');
+  byId('n-ai-lbl', 'AI');
+  byId('n-market-lbl', 'Live');
+  byId('n-pp-lbl', '°C');
+  byId('n-settings-lbl', 'Me');
+
+  const nav = document.getElementById('nav');
+  if (!nav) return;
+
+  const items = nav.querySelectorAll('.ni');
+  if (items[0]) {
+    const span = items[0].querySelector('span');
+    if (span) span.textContent = 'Home';
+  }
+  if (items[1]) {
+    const span = items[1].querySelector('span');
+    if (span) span.textContent = 'AI';
+  }
+  if (items[2]) {
+    const span = items[2].querySelector('span');
+    if (span) span.textContent = 'Live';
+  }
+  if (items[3]) {
+    const span = items[3].querySelector('span');
+    if (span) span.textContent = '°C';
+  }
+  if (items[4]) {
+    const span = items[4].querySelector('span');
+    if (span) span.textContent = 'Me';
+  }
+}
+
+function goScreen(id, opts = {}) {
   if (id === 'screen-onboarding') id = 'screen-setup';
-  _splashTypingActive = false; // 스플래시를 벗어나면 타이핑 중단
+  _splashTypingActive = false;
+
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
+
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
-  const nid=NAV_MAP[id]; if(nid) document.getElementById(nid)?.classList.add('on');
+  const nid = NAV_MAP[id];
+  if (nid) document.getElementById(nid)?.classList.add('on');
+
+  applyNavLabels();
+
   if(id==='screen-home')      renderHome();
   if(id==='screen-list')      renderList();
   if(id==='screen-passport')  renderPassport();
@@ -176,10 +278,22 @@ function goScreen(id) {
   if(id==='screen-settings')  renderSettings();
   if(id==='screen-ai')        initChat();
   if(id==='screen-sig-history') renderSignalHistory();
+
+  if (!opts.noHistory) {
+    if (opts.replace) replaceHistory(id, opts.historyExtra || {});
+    else pushHistory(id, opts.historyExtra || {});
+  }
 }
-function goBack(){ goScreen('screen-home'); }
+
+function goBack(){
+  try {
+    history.back();
+  } catch {
+    goScreen('screen-home', { replace:true });
+  }
+}
 function goPP(){
-  document.getElementById('n-pp-lbl').textContent='°C';
+  applyNavLabels();
   goScreen((state.profile?.gender||'m')==='f'?'screen-passport':'screen-rep');
 }
 
@@ -192,7 +306,7 @@ async function sendOTP() {
     const res=await API.requestOtp('0'+raw);
     if(URIA_CONFIG.MODE==='demo')showToast(`[데모] OTP: ${res.otp}`); else showToast('인증번호가 발송됐습니다');
     state._phone='0'+raw;
-    goScreen('screen-otp');  // ← 수정: otp-section 대신 화면 전환
+    goScreen('screen-otp');
     document.querySelector('.otp-digit')?.focus();
   } catch(e){ showToast(e.message||'전송 실패'); }
   finally{ btn.disabled=false; btn.textContent='인증번호 받기'; showLoading(false); }
@@ -209,8 +323,6 @@ async function verifyOTP(code) {
   if(code.length!==6)return showToast('6자리 인증번호를 입력해주세요');
   showLoading(true);
   try {
-    // FIX #23: 인증만 하고 사용자 정보는 setup 단계에서 별도 전송
-    // 우선 OTP 코드만 보관 후, saveProfile에서 verifyOtp 호출
     state._otpCode = code;
     goScreen('screen-setup');
   } catch(e){ showToast(e.message||'인증 실패'); }
@@ -223,7 +335,7 @@ function selectGender(g){
   document.getElementById('g-'+g)?.classList.add('sel');
 }
 
-// ── saveProfile (setup-nick, g-f/g-m, setup-age, setup-bio) ──
+// ── saveProfile ─────────────────────────────────────
 async function saveProfile(){
   const nick = document.getElementById('setup-nick')?.value.trim();
   if(!nick) return showToast('닉네임을 입력해주세요');
@@ -232,11 +344,10 @@ async function saveProfile(){
   const bio = document.getElementById('setup-bio')?.value.trim() || '';
   const age = parseInt(ageStr) || 30;
   const birth_year = new Date().getFullYear() - age + 1;
-  const G = gender.toUpperCase();  // 'M' / 'F'
+  const G = gender.toUpperCase();
 
   showLoading(true);
   try {
-    // FIX #23: 실제 사용자 정보로 verifyOtp 호출 (이제서야 백엔드에 가입)
     if (state._otpCode && state._phone) {
       const res = await API.verifyOtp(state._phone, state._otpCode, {
         gender: G, birth_year, nickname: nick,
@@ -245,11 +356,9 @@ async function saveProfile(){
       state.user = res.user;
       state._otpCode = null;
     }
-    // FIX #24: bio 등 추가 정보를 백엔드에 PATCH (라이브 모드)
     if (URIA_CONFIG.MODE === 'live' && bio) {
       try { await API.updateMe({ bio }); } catch(e){ console.warn('updateMe 실패:', e); }
     }
-    // 잔액 동기화 (라이브: 신규 5코인 보너스 / 데모: 10코인)
     let coins = URIA_CONFIG.MODE === 'live' ? 5 : 10;
     try {
       const w = await API.getWallet();
@@ -290,8 +399,11 @@ function previewPhoto(input) {
 // ── devBypass ────────────────────────────────────────
 function devBypass(){
   state.devMode=true;
-  state.profile={nick:'Dev',gender:'m',age:'30대 초반',bio:'개발자 테스트 계정',coins:47,trustScore:62,momentCount:3,responseRate:88,repScore:104,reportCount:0};
-  state.coins=47; saveProfileLocal(); loadSentSignals(); enterApp();
+  state.profile={nick:'Dev',gender:'m',age:'30대 초반',bio:'개발자 테스트 계정',coins:47,trustScore:62,momentCount:3,responseRate:88,repScore:104};
+  state.coins=47;
+  saveProfileLocal();
+  loadSentSignals();
+  enterApp();
 }
 
 // ── 프로필 저장/로드 ─────────────────────────────────
@@ -307,23 +419,33 @@ function showCoinShop(){ openCoinModal(); }
 
 // ── 지갑 ────────────────────────────────────────────
 async function loadWallet(){
-  try{ const w=await API.getWallet(); state.coins=w.coin_balance??0; state.points=w.point_balance??0; if(state.profile)state.profile.coins=state.coins; updateCoinsUI(); }catch{}
+  try{
+    const w=await API.getWallet();
+    state.coins=w.coin_balance??0;
+    state.points=w.point_balance??0;
+    if(state.profile)state.profile.coins=state.coins;
+    updateCoinsUI();
+  }catch{}
 }
 
 function updateCoinsUI(){
-  // home-coins id 직접 업데이트
   const hc = document.getElementById('home-coins');
   if (hc) hc.textContent = state.coins + 'C';
-  // .coin-display 클래스 업데이트
   document.querySelectorAll('.coin-display').forEach(el=>el.textContent=state.coins+'C');
-  // settings 잔액
   const sc=document.getElementById('settings-coins'); if(sc)sc.textContent=`잔액 ${state.coins}C`;
 }
 
 // ── GPS ─────────────────────────────────────────────
 function getLocation(){
   if(!navigator.geolocation)return;
-  navigator.geolocation.getCurrentPosition(pos=>{ state.location={lat:pos.coords.latitude,lng:pos.coords.longitude}; updateDistances(); },()=>{},{timeout:8000,maximumAge:60000});
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      state.location={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      updateDistances();
+    },
+    ()=>{},
+    {timeout:8000,maximumAge:60000}
+  );
 }
 function updateDistances(){
   if(!state.location)return;
@@ -332,21 +454,41 @@ function updateDistances(){
 
 // ── 타이머 ──────────────────────────────────────────
 function startClock(){
-  const tick=()=>{ const n=new Date(); const t=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); ['home-clk','home-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t;}); };
-  tick(); setInterval(tick,10000);
+  const tick=()=>{
+    const n=new Date();
+    const t=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
+    ['home-clk','home-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t;});
+  };
+  tick();
+  setInterval(tick,10000);
 }
 function startMarketTimer(){
-  const upd=()=>{ const n=new Date(),h=n.getHours(),m=n.getMinutes(),live=isTonightHour(); let s; if(live){const r=(URIA_CONFIG.TONIGHT_END-h-1)*60+(60-m);s=Math.floor(r/60).toString().padStart(2,'0')+':'+((r%60)).toString().padStart(2,'0');}else{s=h<URIA_CONFIG.TONIGHT_START?(URIA_CONFIG.TONIGHT_START-h)+'시간 후':'내일 6PM';} ['mkt-timer','market-timer'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=s;}); };
-  upd(); setInterval(upd,30000);
+  const upd=()=>{
+    const n=new Date(),h=n.getHours(),m=n.getMinutes(),live=isTonightHour();
+    let s;
+    if(live){
+      const r=(URIA_CONFIG.TONIGHT_END-h-1)*60+(60-m);
+      s=Math.floor(r/60).toString().padStart(2,'0')+':'+((r%60)).toString().padStart(2,'0');
+    }else{
+      s=h<URIA_CONFIG.TONIGHT_START?(URIA_CONFIG.TONIGHT_START-h)+'시간 후':'내일 6PM';
+    }
+    ['mkt-timer','market-timer'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=s;});
+  };
+  upd();
+  setInterval(upd,30000);
 }
 
 // ── Tonight ──────────────────────────────────────────
 async function toggleTonight(){
-  if(URIA_CONFIG.MODE==='live'&&!isTonightHour()){ showToast(`Tonight Mode는 오후 ${URIA_CONFIG.TONIGHT_START}시~자정만 이용 가능합니다`); return; }
+  if(URIA_CONFIG.MODE==='live'&&!isTonightHour()){
+    showToast(`Tonight Mode는 오후 ${URIA_CONFIG.TONIGHT_START}시~자정만 이용 가능합니다`);
+    return;
+  }
   state.tonight=!state.tonight;
   document.getElementById('tonight-sw')?.classList.toggle('on',state.tonight);
   document.getElementById('tonight-toggle')?.classList.toggle('on',state.tonight);
-  const sub=document.getElementById('tonight-sub'); if(sub)sub.textContent=state.tonight?'지금 가능한 사람들과 연결 중':'오늘 가능한 사람들과 연결';
+  const sub=document.getElementById('tonight-sub');
+  if(sub)sub.textContent=state.tonight?'지금 가능한 사람들과 연결 중':'오늘 가능한 사람들과 연결';
   document.getElementById('app')?.classList.toggle('tonight-on',state.tonight);
   document.body.classList.toggle('tonight-on',state.tonight);
   document.querySelector('meta[id="theme-color-meta"]')?.setAttribute('content',state.tonight?'#0c0c0e':'#ffffff');
@@ -364,7 +506,7 @@ async function renderHome(){
   const sd=document.getElementById('stat-dist'); if(sd)sd.textContent=state.tonight?'2.1':'—';
   const sn=document.getElementById('stat-new'); if(sn)sn.textContent=state.tonight?Math.max(1,Math.floor(a*0.6)):'—';
   const ls=document.getElementById('list-count-sub'); if(ls)ls.textContent=state.tonight?`${a}명 주변`:'주변 추천';
-  // incoming-section: 여성만 표시
+
   const incomingSec = document.getElementById('incoming-section');
   if (incomingSec) {
     const isF = (state.profile?.gender || '') === 'f';
@@ -374,7 +516,7 @@ async function renderHome(){
 }
 
 function renderIncomingSignals(){
-  const c=document.getElementById('incoming-list'); if(!c)return;  // ← 수정: signal-list → incoming-list
+  const c=document.getElementById('incoming-list'); if(!c)return;
   const sigs=state.signals.length?state.signals:(state.devMode?DEMO_SIGNALS:[]);
   if(!sigs.length){
     c.innerHTML=`<div class="empty-state"><div class="empty-icon">→</div><div class="empty-title">받은 Signal이 없어요</div><div class="empty-sub">Tonight Mode를 켜면 Signal이 도착합니다</div></div>`;
@@ -388,13 +530,15 @@ async function acceptSignal(idx){
   const sig=(state.signals.length?state.signals:DEMO_SIGNALS)[idx]; if(!sig)return;
   try{ await API.respondSignal(sig.id,'accept'); }catch{}
   showToast(`${esc(sig.sender?.nickname)}님과 연결! (1C 확정)`);
-  if(state.signals.length)state.signals.splice(idx,1); renderIncomingSignals();
+  if(state.signals.length)state.signals.splice(idx,1);
+  renderIncomingSignals();
 }
 async function rejectSignal(idx){
   const sig=(state.signals.length?state.signals:DEMO_SIGNALS)[idx]; if(!sig)return;
   try{ await API.respondSignal(sig.id,'reject'); }catch{}
   showToast('Signal 거절 — 3C 전액 환불됨');
-  if(state.signals.length)state.signals.splice(idx,1); renderIncomingSignals();
+  if(state.signals.length)state.signals.splice(idx,1);
+  renderIncomingSignals();
 }
 
 // ── 매칭 리스트 ──────────────────────────────────────
@@ -402,17 +546,24 @@ async function loadMatches(){
   try{
     const res=await API.getNearby({lat:state.location?.lat||37.5,lng:state.location?.lng||127.0,radius_km:5});
     state.matches=(res.items||[]).map(u=>({...u,dist:u.distance_m?u.distance_m/1000:null,nick:u.nickname,color:getAvatarColor(u.nickname)}));
-  }catch{ state.matches=DEMO_MATCHES; }
+  }catch{
+    state.matches=DEMO_MATCHES;
+  }
   updateDistances();
 }
 function renderList(){
   const list=document.getElementById('match-list'),badge=document.getElementById('list-count-badge'); if(!list)return;
-  if(!state.matches.length){ list.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tonight Mode를 켜면 리스트가 나와요</div><div class="empty-sub">오늘 밤 가능한 분들이 여기 나타납니다</div></div>`; if(badge)badge.textContent=''; return; }
+  if(!state.matches.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tonight Mode를 켜면 리스트가 나와요</div><div class="empty-sub">오늘 밤 가능한 분들이 여기 나타납니다</div></div>`;
+    if(badge)badge.textContent='';
+    return;
+  }
   if(badge)badge.textContent=`${state.matches.length}명`;
   list.innerHTML=state.matches.map((m,i)=>`<div class="person-card${i>=3?' locked':''}" onclick="${i<3?`selectMatch(${i})`:'openCoinModal()'}"><div class="pav pav-online" style="background:${m.color||getAvatarColor(m.nick)}">${esc((m.nick||'?')[0])}</div><div style="flex:1"><div class="pname">${esc(m.nick)}님 ${esc(m.age||'')}</div><div class="pmeta">${formatDist(m.dist)} · ${esc(m.available||'오늘 가능')}</div></div><div class="tscore"><div class="ts-n">${m.trustScore||0}</div><div class="ts-l">Trust</div></div>${i>=3?'<div style="font-size:10px;color:var(--t3)">1C</div>':''}</div>`).join('');
 }
 function selectMatch(idx){
-  state.selectedMatch=state.matches[idx]; const m=state.selectedMatch;
+  state.selectedMatch=state.matches[idx];
+  const m=state.selectedMatch;
   const av=document.getElementById('sig-avatar'); if(av){av.textContent=esc((m.nick||'?')[0]);av.style.background=m.color||getAvatarColor(m.nick);}
   const sn=document.getElementById('sig-name'); if(sn)sn.textContent=esc(m.nick)+'님';
   const sm=document.getElementById('sig-meta'); if(sm)sm.textContent=`Trust ${m.trustScore||0} · ${formatDist(m.dist)} · ${esc(m.available||'오늘 가능')}`;
@@ -421,15 +572,23 @@ function selectMatch(idx){
   goScreen('screen-signal');
 }
 
-// ── Signal 전송 (SAFE BET) ────────────────────────────
+// ── Signal 전송 ──────────────────────────────────────
 async function sendSignal(){
-  const msg=document.getElementById('sig-msg')?.value.trim(); if(!msg)return showToast('메시지를 입력해주세요');
+  const msg=document.getElementById('sig-msg')?.value.trim();
+  if(!msg)return showToast('메시지를 입력해주세요');
   const cost=URIA_CONFIG.SIGNAL_ESCROW_COINS;
-  if(state.coins<cost){ showToast(`크레딧 부족 (${cost}C 필요 · 최대 실제비용 ${URIA_CONFIG.MAX_REAL_COST}C)`); openCoinModal(); return; }
-  showLoading(true); await sleep(800);
+  if(state.coins<cost){
+    showToast(`크레딧 부족 (${cost}C 필요 · 최대 실제비용 ${URIA_CONFIG.MAX_REAL_COST}C)`);
+    openCoinModal();
+    return;
+  }
+  showLoading(true);
+  await sleep(800);
   try{ await API.sendSignal({receiver_id:state.selectedMatch?.id,message:msg}); }catch{}
-  state.coins-=cost; if(state.profile)state.profile.coins=state.coins; saveProfileLocal(); updateCoinsUI();
-  // sentSignals 로컬 저장
+  state.coins-=cost;
+  if(state.profile)state.profile.coins=state.coins;
+  saveProfileLocal();
+  updateCoinsUI();
   state.sentSignals.unshift({
     id: 'sig_' + Date.now(),
     receiver: state.selectedMatch?.nick || '—',
@@ -439,7 +598,8 @@ async function sendSignal(){
     date: new Date().toLocaleString('ko-KR'),
   });
   saveSentSignals();
-  showLoading(false); showToast(`Signal 전송! ${cost}C 에스크로 (최대 실제비용 ${URIA_CONFIG.MAX_REAL_COST}C)`);
+  showLoading(false);
+  showToast(`Signal 전송! ${cost}C 에스크로 (최대 실제비용 ${URIA_CONFIG.MAX_REAL_COST}C)`);
   setTimeout(()=>goScreen('screen-home'),900);
 }
 
@@ -465,54 +625,95 @@ function renderSignalHistory(){
 let chatHistory=[],chatTurn=0;
 function initChat(){
   chatHistory=[]; chatTurn=0;
-  const b=document.getElementById('chat-messages'); if(!b)return;  // ← 수정: chat-box → chat-messages
+  const b=document.getElementById('chat-messages'); if(!b)return;
   b.innerHTML='';
   addAIMessage('안녕하세요! 오늘 어떤 분을 찾고 계세요?');
-  addChips(['조용한 분위기','활발한 분위기','편한 대화'],handleChipSelect);
+  addChips(['조용한 분위기','활발한 분위기','편한 대화']);
 }
 function addAIMessage(t){
-  const b=document.getElementById('chat-messages'); if(!b)return;  // ← 수정
+  const b=document.getElementById('chat-messages'); if(!b)return;
   b.insertAdjacentHTML('beforeend',`<div class="bubble ai"><div class="ai-av"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div>${esc(t).replace(/\n/g,'<br>')}</div></div>`);
   b.scrollTop=b.scrollHeight;
 }
 function addUserMessage(t){
-  const b=document.getElementById('chat-messages'); if(!b)return;  // ← 수정
+  const b=document.getElementById('chat-messages'); if(!b)return;
   b.insertAdjacentHTML('beforeend',`<div class="bubble me">${esc(t)}</div>`);
   b.scrollTop=b.scrollHeight;
 }
-function addChips(opts,fn){
-  const b=document.getElementById('chat-messages'); if(!b)return;  // ← 수정
-  const d=document.createElement('div'); d.className='chips-row';
+function addChips(opts){
+  const b=document.getElementById('chat-messages'); if(!b)return;
+  const d=document.createElement('div');
+  d.className='chips-row';
   d.innerHTML=opts.map(o=>`<div class="ai-chip" onclick="handleChipSelect('${esc(o)}')">${esc(o)}</div>`).join('');
-  b.appendChild(d); b.scrollTop=b.scrollHeight;
-}
-function addListCTA(){
-  const b=document.getElementById('chat-messages'); if(!b)return;  // ← 수정
-  const d=document.createElement('div'); d.className='chat-go';
-  d.innerHTML='<div class="chat-go-title">리스트 보기</div><div class="chat-go-sub">조건 맞는 분들 찾았어요</div>';
-  d.onclick=()=>goScreen('screen-list'); b.appendChild(d); b.scrollTop=b.scrollHeight;
-}
-function handleChipSelect(sel){ document.querySelectorAll('.ai-chip').forEach(c=>c.classList.add('sel')); setTimeout(()=>sendChatWithText(sel),200); }
-async function sendChat(){ const inp=document.getElementById('chat-input'); const t=inp?.value.trim(); if(!t)return; inp.value=''; await sendChatWithText(t); }
-async function sendChatWithText(text){
-  addUserMessage(text); chatHistory.push({role:'user',content:text}); chatTurn++;
-  const b=document.getElementById('chat-messages'),tid='t'+Date.now();  // ← 수정
-  b.insertAdjacentHTML('beforeend',`<div class="bubble ai typing" id="${tid}">···</div>`); b.scrollTop=b.scrollHeight;
-  await sleep(700+Math.random()*400);
-  let reply=URIA_CONFIG.MODE==='demo'?getDemoAIResponse(text,chatTurn):await(async()=>{ try{ const r=await API.post('/ai/chat',{messages:chatHistory}); return r.content||getDemoAIResponse(text,chatTurn); }catch{ return getDemoAIResponse(text,chatTurn); }})();
-  const el=document.getElementById(tid); if(el){el.classList.remove('typing');el.innerHTML=`<div class="ai-av"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div>${esc(reply).replace(/\n/g,'<br>')}</div>`;}
-  chatHistory.push({role:'assistant',content:reply});
-  if(reply.includes('매칭 리스트 준비')||reply.includes('"ready"')){ await loadMatches(); addListCTA(); }
-  else if(chatTurn===2)addChips(['20대','30대','나이 무관'],handleChipSelect);
-  else if(chatTurn===3)addChips(['2km 이내','5km 이내','거리 무관'],handleChipSelect);
+  b.appendChild(d);
   b.scrollTop=b.scrollHeight;
 }
-function getDemoAIResponse(t,n){ if(n<=2)return '어떤 나이대를 선호하세요?'; if(n<=4)return '반경은 어느 정도까지 괜찮으세요?'; return '반경 2.3km에 조건 맞는 분들 찾았어요 ✦\n매칭 리스트 준비됐어요 {"ready":true}'; }
+function addListCTA(){
+  const b=document.getElementById('chat-messages'); if(!b)return;
+  const d=document.createElement('div');
+  d.className='chat-go';
+  d.innerHTML='<div class="chat-go-title">리스트 보기</div><div class="chat-go-sub">조건 맞는 분들 찾았어요</div>';
+  d.onclick=()=>goScreen('screen-list');
+  b.appendChild(d);
+  b.scrollTop=b.scrollHeight;
+}
+function handleChipSelect(sel){
+  document.querySelectorAll('.ai-chip').forEach(c=>c.classList.add('sel'));
+  setTimeout(()=>sendChatWithText(sel),200);
+}
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const t=inp?.value.trim();
+  if(!t)return;
+  inp.value='';
+  await sendChatWithText(t);
+}
+async function sendChatWithText(text){
+  addUserMessage(text);
+  chatHistory.push({role:'user',content:text});
+  chatTurn++;
+  const b=document.getElementById('chat-messages');
+  const tid='t'+Date.now();
+  b.insertAdjacentHTML('beforeend',`<div class="bubble ai typing" id="${tid}">···</div>`);
+  b.scrollTop=b.scrollHeight;
+  await sleep(700+Math.random()*400);
+  let reply=URIA_CONFIG.MODE==='demo'
+    ? getDemoAIResponse(text,chatTurn)
+    : await(async()=>{
+        try{
+          const r=await API.post('/ai/chat',{messages:chatHistory});
+          return r.content||getDemoAIResponse(text,chatTurn);
+        }catch{
+          return getDemoAIResponse(text,chatTurn);
+        }
+      })();
+  const el=document.getElementById(tid);
+  if(el){
+    el.classList.remove('typing');
+    el.innerHTML=`<div class="ai-av"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div>${esc(reply).replace(/\n/g,'<br>')}</div>`;
+  }
+  chatHistory.push({role:'assistant',content:reply});
+  if(reply.includes('매칭 리스트 준비')||reply.includes('"ready"')){
+    await loadMatches();
+    addListCTA();
+  } else if(chatTurn===2){
+    addChips(['20대','30대','나이 무관']);
+  } else if(chatTurn===3){
+    addChips(['2km 이내','5km 이내','거리 무관']);
+  }
+  b.scrollTop=b.scrollHeight;
+}
+function getDemoAIResponse(t,n){
+  if(n<=2)return '어떤 나이대를 선호하세요?';
+  if(n<=4)return '반경은 어느 정도까지 괜찮으세요?';
+  return '반경 2.3km에 조건 맞는 분들 찾았어요 ✦\n매칭 리스트 준비됐어요 {"ready":true}';
+}
 
-// ── °C Passport (여성) ────────────────────────────────
+// ── °C Passport ──────────────────────────────────────
 async function renderPassport(){
   try{
-    const p=await API.getPassport(); const tier=getTrustTier(p.trust_score||0);
+    const p=await API.getPassport();
+    const tier=getTrustTier(p.trust_score||0);
     if(document.getElementById('pp-score'))document.getElementById('pp-score').textContent=p.trust_score||'—';
     const tb=document.getElementById('pp-tier'); if(tb){tb.textContent=`◈ ${tier.name}`;tb.style.color=tier.color;}
     if(document.getElementById('pp-resp'))document.getElementById('pp-resp').textContent=(p.response_rate||0)+'%';
@@ -530,7 +731,7 @@ function getTrustTier(s){
   return{name:'36.5°C',color:'#6b7280'};
 }
 
-// ── °C Reputation (남성) ──────────────────────────────
+// ── °C Reputation ────────────────────────────────────
 const LEVELS=[
   {name:'36.5°C',label:'Normal',min:0,max:40,color:'#94a3b8',emoji:'🌡️'},
   {name:'37~45°C',label:'Warm',min:40,max:100,color:'#60a5fa',emoji:'☀️'},
@@ -539,7 +740,8 @@ const LEVELS=[
 ];
 async function renderReputation(){
   try{
-    const r=await API.getReputation(); const score=r.score||0;
+    const r=await API.getReputation();
+    const score=r.score||0;
     const lv=LEVELS.find(l=>score>=l.min&&score<l.max)||LEVELS[0];
     const nx=LEVELS[LEVELS.indexOf(lv)+1];
     const prog=nx?((score-lv.min)/(nx.min-lv.min))*100:100;
@@ -551,7 +753,8 @@ async function renderReputation(){
     if(document.getElementById('b2'))document.getElementById('b2').style.width=Math.min((r.moment_count||0)*10,100)+'%';
     if(document.getElementById('b3'))document.getElementById('b3').style.width='70%';
     if(document.getElementById('b4'))document.getElementById('b4').style.width=(r.report_count||0)===0?'100%':'0%';
-    const lvList=document.getElementById('lv-list'); if(lvList)lvList.innerHTML=LEVELS.map(l=>{
+    const lvList=document.getElementById('lv-list');
+    if(lvList)lvList.innerHTML=LEVELS.map(l=>{
       const ic=score>=l.min&&score<l.max;
       return `<div class="lv-card${ic?' cur':''}" style="${ic?`border-color:${l.color}40`:''}">
         ${ic?'<div class="lv-tag">현재</div>':''}
@@ -563,10 +766,10 @@ async function renderReputation(){
   }catch{}
 }
 
-// ── Market (캐시로 랜덤 고정) ─────────────────────────
+// ── Market ───────────────────────────────────────────
 let _mktStats = null;
 let _mktStatsTs = 0;
-const MKT_TTL = 30 * 60 * 1000; // 30분
+const MKT_TTL = 30 * 60 * 1000;
 
 function renderMarket(){
   const live=isTonightHour();
@@ -580,7 +783,6 @@ function renderMarket(){
   }
   const ef=document.getElementById('mkt-f'); if(ef)ef.textContent=live?_mktStats.f:'—';
   const em=document.getElementById('mkt-m'); if(em)em.textContent=live?_mktStats.m:'—';
-  // mkt-msg 업데이트
   const mm=document.getElementById('mkt-msg');
   if(mm){
     if(!live){
@@ -594,15 +796,23 @@ function renderMarket(){
   }
 }
 
-// ── Moment 완료 (SAFE BET: 순 비용 2C) ───────────────
+// ── Moment 완료 ──────────────────────────────────────
 async function completeMoment(){
-  showLoading(true); await sleep(1200);
+  showLoading(true);
+  await sleep(1200);
   const proofs = LS.getJSON('uria_proofs', []);
   proofs.unshift({num:(state.profile?.momentCount||0)+1,venue:['Café Nuit','Bar Velvet','Lounge Green'][Math.floor(Math.random()*3)],date:getRelativeDate(0)});
   LS.setJSON('uria_proofs', proofs.slice(0,20));
-  if(state.profile){ state.profile.momentCount=(state.profile.momentCount||0)+1; state.coins=Math.max(0,state.coins+1); state.profile.coins=state.coins; saveProfileLocal(); updateCoinsUI(); }
+  if(state.profile){
+    state.profile.momentCount=(state.profile.momentCount||0)+1;
+    state.coins=Math.max(0,state.coins+1);
+    state.profile.coins=state.coins;
+    saveProfileLocal();
+    updateCoinsUI();
+  }
   try{ await API.post('/moments/complete',{}); }catch{}
-  showLoading(false); showToast('Moment 완료! +1C 환불 · 순 비용 2C · +180pts 🎉');
+  showLoading(false);
+  showToast('Moment 완료! +1C 환불 · 순 비용 2C · +180pts 🎉');
   setTimeout(()=>goBack(),1000);
 }
 
@@ -611,7 +821,6 @@ function renderSettings(){
   const p=state.profile; if(!p)return;
   const av=document.getElementById('settings-av'); if(av){av.textContent=esc((p.nick||'?')[0]);av.style.background=getAvatarColor(p.nick);}
   if(document.getElementById('settings-name'))document.getElementById('settings-name').textContent=esc(p.nick||'');
-  // settings-sub: 성별 + 나이 표시 (수정: settings-age 대신 settings-sub)
   const ssub=document.getElementById('settings-sub');
   if(ssub){
     const genderLabel = p.gender==='f'?'여성':p.gender==='m'?'남성':'—';
@@ -629,22 +838,50 @@ async function signOut(){
   document.getElementById('nav').style.display='none';
   document.getElementById('app')?.classList.remove('tonight-on');
   document.body.classList.remove('tonight-on');
-  goScreen('screen-splash');
+  goScreen('screen-splash', { replace:true });
   _splashTypingActive = false;
   setTimeout(startSplashTyping, 100);
   showToast('로그아웃됐습니다');
 }
 
 // ── Credit 모달 ──────────────────────────────────────
-function openCoinModal(){ document.getElementById('coin-modal')?.classList.add('show'); }
-function closeCoinModal(e){ if(!e||e.target===document.getElementById('coin-modal'))document.getElementById('coin-modal')?.classList.remove('show'); }
+function openCoinModal(){
+  const modal = document.getElementById('coin-modal');
+  if (!modal) return;
+  modal.classList.add('show');
+  pushHistory(getActiveScreenId() || ROOT_SCREEN, { modal:'coin' });
+}
+function closeCoinModal(e){
+  const modal = document.getElementById('coin-modal');
+  if (!modal) return;
+  if(!e || e.target===modal){
+    modal.classList.remove('show');
+    const current = getActiveScreenId() || ROOT_SCREEN;
+    replaceHistory(current, { modal:null });
+  }
+}
 async function buyCoin(amount,price){
-  if(URIA_CONFIG.MODE==='demo'){ state.coins+=amount; if(state.profile)state.profile.coins=state.coins; saveProfileLocal(); updateCoinsUI(); closeCoinModal(); showToast(`🪙 ${amount}C 충전 완료!`); return; }
+  if(URIA_CONFIG.MODE==='demo'){
+    state.coins+=amount;
+    if(state.profile)state.profile.coins=state.coins;
+    saveProfileLocal();
+    updateCoinsUI();
+    closeCoinModal();
+    showToast(`🪙 ${amount}C 충전 완료!`);
+    return;
+  }
   showToast('결제 모듈 준비 중입니다');
 }
 
 // ── Toast ────────────────────────────────────────────
-function showToast(msg,ms=2800){ const t=document.getElementById('toast'); if(!t)return; t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); }
+function showToast(msg,ms=2800){
+  const t=document.getElementById('toast');
+  if(!t)return;
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),ms);
+}
 
 // ── 시작 ────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',initApp);
