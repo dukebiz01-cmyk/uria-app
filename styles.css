@@ -23,15 +23,46 @@
   --nav-bg:rgba(12,12,14,.96);
 }
 
-html,body{height:100%;background:var(--bg);overflow:hidden;font-family:'Inter',sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+html,body{
+  height:100%;
+  max-width:100%;
+  background:var(--bg);
+  overflow:hidden;
+  overflow-x:hidden;
+  font-family:'Inter',sans-serif;
+  color:var(--t1);
+  -webkit-font-smoothing:antialiased;
+  transition:background .3s,color .3s
+}
 input,button,select,textarea{font-family:'Inter',sans-serif}
 button{cursor:pointer;border:none;background:none;color:inherit}
 
 /* ============ APP SHELL ============ */
-#app{height:100vh;height:100dvh;max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg);transition:background .35s}
+#app{
+  height:100vh;
+  height:100dvh;
+  max-width:430px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+  background:var(--bg);
+  transition:background .35s;
+  padding-bottom:calc(82px + var(--safe-b));
+}
 
 /* ============ SCREENS ============ */
-.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;background:var(--bg);padding-bottom:calc(70px + var(--safe-b));transition:background .35s}
+.screen{
+  position:absolute;
+  inset:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  display:none;
+  background:var(--bg);
+  padding-bottom:calc(82px + var(--safe-b));
+  transition:background .35s
+}
 .screen.active{display:block;animation:fadeUp .2s ease}
 .no-nav{padding-bottom:0!important}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -44,13 +75,88 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 .tb-back svg{width:18px;height:18px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round}
 
 /* ============ BOTTOM NAV ============ */
-#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--nav-bg);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:none;z-index:50;padding:8px 0 calc(8px + var(--safe-b));transition:background .3s}
-.nav-inner{display:flex}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;cursor:pointer;transition:opacity .15s}
-.ni svg{width:20px;height:20px;stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
-.ni span{font-size:9px;color:var(--t3);transition:color .15s;letter-spacing:.02em}
+#nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:430px;
+  background:var(--nav-bg);
+  backdrop-filter:blur(20px);
+  border-top:1px solid var(--line);
+  display:none;
+  z-index:50;
+  min-height:72px;
+  padding:8px 0 calc(8px + var(--safe-b));
+  transition:background .3s;
+  box-sizing:border-box;
+}
+.nav-inner{
+  display:flex;
+  align-items:stretch;
+  justify-content:space-around;
+  width:100%;
+}
+.ni{
+  flex:1 1 0;
+  min-width:0;
+  max-width:20%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:4px 2px;
+  cursor:pointer;
+  transition:opacity .15s;
+  position:relative;
+  overflow:hidden;
+  text-align:center;
+}
+.ni svg{
+  width:20px;
+  height:20px;
+  stroke:var(--t3);
+  fill:none;
+  stroke-width:1.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  transition:stroke .15s;
+  flex:0 0 auto;
+}
+.ni span{
+  display:block;
+  width:100%;
+  max-width:100%;
+  font-size:10px;
+  color:var(--t3);
+  transition:color .15s;
+  letter-spacing:0;
+  line-height:1.1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  word-break:keep-all;
+  text-align:center;
+}
 .ni.on svg,.ni.on span{stroke:var(--acc);color:var(--acc)}
-.ni-badge{background:var(--rd);border-radius:20px;padding:1px 5px;font-size:9px;font-weight:600;color:#fff;position:absolute;top:-2px;right:50%;transform:translateX(8px)}
+.ni-badge{
+  background:var(--rd);
+  border-radius:20px;
+  padding:1px 5px;
+  font-size:9px;
+  font-weight:600;
+  color:#fff;
+  position:absolute;
+  top:0;
+  right:50%;
+  transform:translateX(10px);
+  white-space:nowrap;
+}
+@media (max-width:390px){
+  .ni span{font-size:9px}
+}
 
 /* ============ COMMON COMPONENTS ============ */
 .section-label{padding:16px 20px 8px;font-size:10px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;font-weight:500}
